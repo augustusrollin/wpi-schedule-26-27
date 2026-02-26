@@ -69,6 +69,7 @@ ul { list-style: none; }
 /* ── PAGE HEADER ───────────────────────────────────────────── */
 .page-header {
   display: flex; align-items: flex-start; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px;
   margin-bottom: 20px;
 }
 .page-header h1 { font-size: 1.6rem; font-weight: 700; color: var(--text); }
@@ -711,3 +712,111 @@ ul { list-style: none; }
 .cat-btn-remove { background: var(--border); color: var(--text); }
 .cat-btn-remove:hover { background: var(--wpi-gray); color: #fff; }
 .cat-btn[disabled], .cat-btn:not(.cat-btn-add):not(.cat-btn-remove) { background: var(--bg); color: var(--wpi-gray); cursor: default; }
+
+/* ============================================================
+   RESPONSIVE / MOBILE
+   ============================================================ */
+
+/* ── Tablet (≤ 900px) ───────────────────────────────────────── */
+@media (max-width: 900px) {
+  .term-cards        { grid-template-columns: 1fr 1fr; }
+  .manual-layout     { grid-template-columns: 1fr; }
+  .result-grid       { grid-template-columns: 1fr 1fr; }
+}
+
+/* ── Mobile (≤ 640px) ───────────────────────────────────────── */
+@media (max-width: 640px) {
+  html { font-size: 14px; }
+
+  /* Navbar — wrap brand + scrollable buttons below */
+  .navbar {
+    flex-wrap: wrap; height: auto;
+    padding: 10px 14px; gap: 8px;
+  }
+  .nav-brand { flex: 1; }
+  .nav-title { display: none; }          /* hide subtitle, keep WPI logo */
+  .nav-links {
+    width: 100%; display: flex; gap: 4px;
+    overflow-x: auto; padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .nav-links::-webkit-scrollbar { display: none; }
+  .nav-btn { padding: 6px 12px; font-size: .8rem; white-space: nowrap; flex-shrink: 0; }
+
+  /* Reduce main padding */
+  .main-content { padding: 14px 12px; }
+
+  /* Page header stacks title + actions */
+  .page-header { flex-wrap: wrap; gap: 10px; }
+  .page-header h1 { font-size: 1.3rem; }
+  .header-actions { flex-wrap: wrap; gap: 8px; }
+  .header-actions .btn { flex: 1; min-width: 120px; }
+
+  /* Semester totals — stack */
+  .semester-totals { flex-wrap: wrap; gap: 10px; }
+  .sem-box { flex: 1 1 calc(50% - 5px); min-width: 130px; padding: 14px; }
+  .sem-count { font-size: 2rem; }
+
+  /* Term cards — single column */
+  .term-cards { grid-template-columns: 1fr; }
+
+  /* Graduation requirements — 1 column on small screens */
+  .grad-cats-grid { grid-template-columns: 1fr; }
+
+  /* Auto scheduler result grid */
+  .result-grid { grid-template-columns: 1fr 1fr !important; }
+
+  /* Calendar controls */
+  .calendar-controls { gap: 8px; }
+  .term-tabs { gap: 4px; }
+  .term-tab  { padding: 5px 10px; font-size: .8rem; }
+  .mode-toggle .toggle-btn { padding: 5px 10px; font-size: .8rem; }
+  .mode-toggle .btn { padding: 5px 10px; font-size: .8rem; }
+
+  /* Calendar wrap — allow horizontal scroll, reduce height */
+  .calendar-wrap { max-height: calc(100vh - 220px); }
+
+  /* Term tags bar */
+  .term-tags-bar { flex-wrap: wrap; gap: 8px; font-size: .82rem; }
+
+  /* Legend chips */
+  .calendar-legend { flex-wrap: wrap; gap: 6px; }
+  .legend-chip { font-size: .72rem; padding: 2px 8px; }
+
+  /* Manual builder — full width */
+  .course-filter-bar { flex-wrap: wrap; gap: 6px; }
+  .filter-btn { padding: 4px 10px; font-size: .8rem; }
+  .md-course { padding: 10px; }
+  .md-label  { font-size: .82rem; }
+
+  /* Modal */
+  .modal-overlay { padding: 12px; }
+  .modal { border-radius: 8px; }
+  .modal-body { padding: 14px; }
+
+  /* Alerts */
+  .alert { font-size: .82rem; padding: 10px 14px; }
+
+  /* Info banner */
+  .info-banner { font-size: .8rem; padding: 10px 14px; }
+
+  /* Section title */
+  .section-title { margin: 14px 0 8px; }
+}
+
+/* ── Small mobile (≤ 480px) ─────────────────────────────────── */
+@media (max-width: 480px) {
+  .result-grid { grid-template-columns: 1fr !important; }
+  .sem-box { flex: 1 1 100%; }
+  .grad-cats-grid { grid-template-columns: 1fr; }
+
+  /* Auto scheduler tab buttons */
+  .tab-btn { padding: 6px 10px; font-size: .8rem; }
+
+  /* Dist row for IQP/MQP distribution */
+  .dist-row { gap: 8px; }
+
+  /* Modal full-screen feel */
+  .modal-overlay { padding: 8px; }
+  .modal { max-height: 92vh; }
+}
