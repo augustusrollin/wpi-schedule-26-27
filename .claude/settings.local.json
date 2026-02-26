@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node:*)",
+      "Bash(open:*)",
+      "Bash(python3:*)",
+      "WebFetch(domain:courselistings.wpi.edu)",
+      "Bash(head:*)",
+      "Bash(curl:*)",
+      "WebSearch"
+    ]
+  }
+}
