@@ -20,7 +20,7 @@ const TYPE_META = {
   DS:   { label:'Data Science',           color:'#27AE60', text:'#fff' },
   INTL: { label:'International Studies',  color:'#8E44AD', text:'#fff' },
   HU:   { label:'Humanities',             color:'#CA6F1E', text:'#fff' },
-  EN:   { label:'English',               color:'#6C3483', text:'#fff' },
+  EN:   { label:'English',               color:'#D4AC0D', text:'#fff' },
   WPE:  { label:'Physical Education',     color:'#17A589', text:'#fff' },
   IQP:  { label:'IQP',                    color:'#B7950B', text:'#fff' },
   MQP:  { label:'MQP',                    color:'#922B21', text:'#fff' },
