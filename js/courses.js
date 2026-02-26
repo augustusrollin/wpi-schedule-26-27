@@ -284,6 +284,18 @@ const COURSES = {
     },
   },
 
+  DS4635: {
+    id:'DS4635', code:'DS 4635', type:'DS', credits:1,
+    name:'Data Analytics and Statistical Learning',
+    description:'Covers modern statistical learning methods for data analytics. Topics include supervised and unsupervised learning, regression, classification, model selection, regularization, and high-dimensional data analysis. Emphasis on both theoretical foundations and practical applications using real datasets.',
+    prerequisites:[],
+    sections:{
+      D:[
+        { section:'D01', professor:'Oren Mangoubi', days:['T','F'], start:'12:00', end:'13:50', location:'Higgins Labs 202', enrolled:'0/30', waitlist:'0/0' },
+      ],
+    },
+  },
+
   // ── INTERNATIONAL STUDIES ─────────────────────────────────
   INTL1100: {
     id:'INTL1100', code:'INTL 1100', type:'INTL', credits:1,
@@ -755,7 +767,7 @@ const TERM_AVAIL = {
      'IQP','MQP'],
   D:['INTL2100','INTL2110','INTL2420','HU3900',
      'EN1251','EN2219','EN2410','EN3219','EN3271',
-     'DS1010','DS2010','DS3010',
+     'DS1010','DS2010','DS3010','DS4635',
      'WPE1009','WPE1011','WPE1012','WPE1018','WPE1019',
      'CS3043','CS3733','CS4341','CS4342','CS4345','CS4432','CS4445',
      'IQP','MQP'],
