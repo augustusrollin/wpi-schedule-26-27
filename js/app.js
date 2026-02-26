@@ -289,7 +289,12 @@ function renderCalendar() {
 
   const courseIds = mode === 'mine'
     ? state.schedule[term]
-    : TERM_AVAIL[term];
+    : TERM_AVAIL[term].filter(id => {
+        if (courseTermInSchedule(id, term)) return true; // in this term — show as "mine"
+        const c = getCourse(id);
+        if (c && c.isProject) return true;               // IQP/MQP can span terms
+        return !courseInSchedule(id);                    // hide if scheduled elsewhere
+      });
 
   el.innerHTML = `
     <div class="page-header">
