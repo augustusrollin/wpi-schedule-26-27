@@ -8,11 +8,13 @@
 // "M-R" = Mon+Thu, "T-F" = Tue+Fri, "M-T-R-F" = Mon+Tue+Thu+Fri
 // ============================================================
 
+// All terms use WPI crimson for headers — subject/class colors highlight courses
+const TERM_HEADER_COLOR = '#AC2B37';
 const TERM_INFO = {
-  A: { id:'A', name:'A Term', fullName:'A Term — Fall 2026',   season:'Fall 2026',   start:'Aug 20, 2026', end:'Oct 9, 2026',   color:'#C0392B', light:'#fdecea' },
-  B: { id:'B', name:'B Term', fullName:'B Term — Fall 2026',   season:'Fall 2026',   start:'Oct 19, 2026', end:'Dec 11, 2026',  color:'#D35400', light:'#fdf0e9' },
-  C: { id:'C', name:'C Term', fullName:'C Term — Spring 2027', season:'Spring 2027', start:'Jan 13, 2027', end:'Mar 5, 2027',   color:'#1E8449', light:'#eafaf1' },
-  D: { id:'D', name:'D Term', fullName:'D Term — Spring 2027', season:'Spring 2027', start:'Mar 15, 2027', end:'May 5, 2027',   color:'#1A5276', light:'#eaf2fb' },
+  A: { id:'A', name:'A Term', fullName:'A Term — Fall 2026',   season:'Fall 2026',   start:'Aug 20, 2026', end:'Oct 9, 2026',   color: TERM_HEADER_COLOR, light:'#fdecea' },
+  B: { id:'B', name:'B Term', fullName:'B Term — Fall 2026',   season:'Fall 2026',   start:'Oct 19, 2026', end:'Dec 11, 2026',  color: TERM_HEADER_COLOR, light:'#fdecea' },
+  C: { id:'C', name:'C Term', fullName:'C Term — Spring 2027', season:'Spring 2027', start:'Jan 13, 2027', end:'Mar 5, 2027',   color: TERM_HEADER_COLOR, light:'#fdecea' },
+  D: { id:'D', name:'D Term', fullName:'D Term — Spring 2027', season:'Spring 2027', start:'Mar 15, 2027', end:'May 5, 2027',   color: TERM_HEADER_COLOR, light:'#fdecea' },
 };
 
 const TYPE_META = {

@@ -241,7 +241,7 @@ function renderTermCard(term) {
   const status = count === 0 ? '' : count < 3 ? 'under' : count > 4 ? 'over' : 'ok';
 
   return `
-    <div class="term-card" style="border-top-color:${info.color}">
+    <div class="term-card">
       <div class="term-card-header" style="background:${info.color}">
         <span class="term-name">${info.name}</span>
         <span class="term-season">${info.season}</span>
@@ -676,8 +676,8 @@ function renderAutoResult(schedule, mode) {
           const regular = courses.filter(c => c.type !== 'WPE');
           const pe = courses.filter(c => c.type === 'WPE');
           return `
-            <div class="result-term" style="border-top:3px solid ${TERM_INFO[t].color}">
-              <div class="result-term-header" style="color:${TERM_INFO[t].color}">
+            <div class="result-term">
+              <div class="result-term-header">
                 ${TERM_INFO[t].name} — ${regular.length} class${regular.length!==1?'es':''}
               </div>
               ${regular.map(c=>`
@@ -1130,7 +1130,7 @@ function downloadSchedulePDF() {
     return days.map(d=>map[d]||d).join('/');
   };
 
-  // Build one compact table per term — laid out 2×2 to fit one landscape page
+  // Build one compact table per term — stacked vertically for portrait layout
   const termCells = ['A','B','C','D'].map(t => {
     const ti = TERM_INFO[t];
     const courses = state.schedule[t].map(id=>getCourse(id)).filter(Boolean);
@@ -1160,7 +1160,7 @@ function downloadSchedulePDF() {
     }).join('');
 
     return `<div style="border:1px solid #ddd;border-radius:6px;overflow:hidden">
-      <div style="background:${ti.color};color:#fff;padding:7px 10px;
+      <div style="background:#AC2B37;color:#fff;padding:7px 10px;
         display:flex;justify-content:space-between;align-items:center">
         <span style="font-size:13px;font-weight:700">${ti.fullName}</span>
         <span style="font-size:10px;opacity:.9">${ti.start} → ${ti.end} · ${regular.length} class${regular.length!==1?'es':''}</span>
@@ -1190,11 +1190,11 @@ function downloadSchedulePDF() {
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
            font-size: 12px; color: #1a1a1a; background: #fff;
            padding: 20px 24px; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .vertical-stack { display: flex; flex-direction: column; gap: 16px; }
     @media print {
       body { padding: 0; }
       .no-print { display: none !important; }
-      @page { margin: 1cm; size: A4 landscape; }
+      @page { margin: 1cm; size: A4 portrait; }
     }
   </style>
 </head>
@@ -1205,16 +1205,16 @@ function downloadSchedulePDF() {
     border-bottom:3px solid #AC2B37;padding-bottom:10px;margin-bottom:14px">
     <div>
       <div style="font-size:20px;font-weight:800;color:#AC2B37;letter-spacing:-.5px">WPI Schedule 2026–27</div>
-      <div style="font-size:11px;color:#666;margin-top:2px">Fall 2026 (A+B) · Spring 2027 (C+D)</div>
+      <div style="font-size:11px;color:#6B7280;margin-top:2px">Fall 2026 (A+B) · Spring 2027 (C+D)</div>
     </div>
-    <div style="text-align:right;font-size:10px;color:#999">
+    <div style="text-align:right;font-size:10px;color:#A9B0B7">
       Generated ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}<br>
       Verify at courselistings.wpi.edu before registering
     </div>
   </div>
 
-  <!-- 2×2 term grid -->
-  <div class="grid">
+  <!-- Vertical term stack (portrait layout) -->
+  <div class="vertical-stack">
     ${termCells[0]}
     ${termCells[1]}
     ${termCells[2]}
