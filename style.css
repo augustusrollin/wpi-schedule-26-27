@@ -201,12 +201,12 @@ ul { list-style: none; }
 .sem-box {
   flex: 1; background: var(--surface); border-radius: var(--radius);
   box-shadow: var(--shadow); padding: 20px;
-  border-left: 4px solid var(--wpi-gray);
+  border: 2px solid var(--wpi-red);
   text-align: center;
 }
-.sem-box.ok    { border-left-color: #22c55e; }
-.sem-box.under { border-left-color: var(--wpi-red); }
-.sem-box.over  { border-left-color: var(--wpi-dark); }
+.sem-box.ok    { border-color: var(--wpi-red); }
+.sem-box.under { border-color: var(--wpi-red); }
+.sem-box.over  { border-color: var(--wpi-dark); }
 .sem-label { font-size: .78rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
 .sem-count { font-size: 2.4rem; font-weight: 800; color: var(--text); line-height: 1.1; }
 .sem-count span { font-size: 1rem; color: var(--text-muted); }

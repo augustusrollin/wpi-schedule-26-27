@@ -163,11 +163,12 @@ function renderDashboard() {
   // Requirements check
   const all = allCourses();
   const intlCount = all.filter(id => { const c=getCourse(id); return c&&c.type==='INTL'; }).length;
-  const hasHU     = all.includes('HU3900');
+  const hasHU     = all.includes('HU3900') || ['A','B','C','D'].some(t => state.termTags?.[t]?.hu39xx);
   const hasDS2010 = all.includes('DS2010');
   const hasDS3010 = all.includes('DS3010');
   const hasCS4432 = all.includes('CS4432');
-  const hasProj   = all.includes('IQP') || all.includes('MQP');
+  const iqpTagCount = ['A','B','C','D'].filter(t => state.termTags?.[t]?.iqp).length;
+  const hasProj   = all.includes('IQP') || all.includes('MQP') || (state.project === 'IQP' && state.projectDist?.reduce((a,b)=>a+b,0) === 3) || iqpTagCount >= 3;
 
   const req = [
     { label:'2 INTL courses (before HU 3900)',  done: intlCount >= 2, partial:`${Math.min(intlCount,2)}/2` },
@@ -204,12 +205,6 @@ function renderDashboard() {
       Note: <strong>HU 3900 sections not yet posted</strong> — a slot is reserved in your schedule.
       Verify enrollment before registering.
     </div>
-
-    ${v.errors.length ? `
-      <div class="alert alert-error">
-        <strong>Schedule Issues (${v.errors.length})</strong>
-        <ul>${v.errors.map(e=>`<li>${e}</li>`).join('')}</ul>
-      </div>` : ''}
 
     ${v.warnings.length ? `
       <div class="alert alert-warning">
