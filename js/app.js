@@ -88,6 +88,14 @@ function setSelectedSection(courseId, term, idx) {
   saveState();
 }
 
+// Named handler for section dropdown — captures value from event.target BEFORE
+// renderManual() replaces the DOM, avoiding stale-this issues in inline handlers
+function changeCourseSection(evt, courseId, term) {
+  const idx = +evt.target.value;
+  setSelectedSection(courseId, term, idx);
+  renderManual();
+}
+
 function getScheduledBefore(term) {
   const TERMS = ['A','B','C','D'];
   const idx = TERMS.indexOf(term);
@@ -343,14 +351,14 @@ function buildCalendarGrid(courseIds, term) {
   // Collect all day-time blocks
   const blocks = [];
 
-  function addBlocks(id, c, sec, isMine, isLab) {
+  function addBlocks(id, c, sec, isMine, isLab, secIdx) {
     if (!sec || !sec.start || !sec.days || !sec.days.length) return;
     const startRow = timeToRow(sec.start, false);
     const endRow   = timeToRow(sec.end,   true);
     for (const day of sec.days) {
       if (!DAY_COLS[day]) continue;
       blocks.push({ id, c, sec, day, startRow, endRow,
-        colIdx: DAY_COLS[day], isMine, isLab });
+        colIdx: DAY_COLS[day], isMine, isLab, secIdx });
     }
   }
 
@@ -360,16 +368,18 @@ function buildCalendarGrid(courseIds, term) {
     const isMine = courseTermInSchedule(id, term);
     if (isMine) {
       // Scheduled: show only the selected section
+      const selIdx = state.selectedSections[term]?.[id] ?? 0;
       const sec = getSelectedSection(id, term);
       if (!sec) continue;
-      addBlocks(id, c, sec, true, false);
-      if (sec.lab) addBlocks(id, c, sec.lab, true, true);
+      addBlocks(id, c, sec, true, false, selIdx);
+      if (sec.lab) addBlocks(id, c, sec.lab, true, true, selIdx);
     } else {
       // Not scheduled: show ALL sections so every time option is visible
-      for (const sec of c.sections[term]) {
+      for (let si = 0; si < c.sections[term].length; si++) {
+        const sec = c.sections[term][si];
         if (!sec) continue;
-        addBlocks(id, c, sec, false, false);
-        if (sec.lab) addBlocks(id, c, sec.lab, false, true);
+        addBlocks(id, c, sec, false, false, si);
+        if (sec.lab) addBlocks(id, c, sec.lab, false, true, si);
       }
     }
   }
@@ -475,7 +485,7 @@ function buildCalendarGrid(courseIds, term) {
       <div class="cal-block${b.isLab?' cal-block-lab':''}"
         style="grid-row:${b.startRow}/${b.endRow};grid-column:${b.colIdx};
                background:${bgColor};opacity:${opacity};${w}${shadow}"
-        onclick="openModal('${b.id}','${term}')"
+        onclick="openModal('${b.id}','${term}',${b.secIdx ?? -1})"
         title="${b.c.code}${secLabel}${labTag} · ${b.c.name}&#10;${fmtTime(sec.start)}–${fmtTime(sec.end)}&#10;${sec.professor||''}${sec.location?' · '+sec.location:''}">
         <div class="cal-block-inner">
           <div class="cal-block-code">${b.c.code}${b.isLab ? ' Lab' : ''}${b.isMine ? ' ★' : ''}</div>
@@ -836,7 +846,7 @@ function renderManual() {
                 const sectionSelector = (isIn && sections.length > 1) ? `
                   <select class="ci-section-select"
                     onclick="event.stopPropagation()"
-                    onchange="setSelectedSection('${c.id}','${term}',+this.value);renderManual()">
+                    onchange="changeCourseSection(event,'${c.id}','${term}')">
                     ${sections.map((s,i) => {
                       const sd = s.days?.length ? `${fmtDays(s.days)} ${fmtTime12(s.start)}–${fmtTime12(s.end)}` : 'No fixed time';
                       return `<option value="${i}" ${i===selIdx?'selected':''}>${s.section}: ${sd} · ${s.professor||'TBD'}</option>`;
@@ -999,13 +1009,19 @@ function showEliminatedReason(id, term) {
 // ============================================================
 // COURSE MODAL
 // ============================================================
-function openModal(courseId, term) {
+function openModal(courseId, term, clickedSecIdx) {
   const c = getCourse(courseId);
   if (!c) return;
   const meta = TYPE_META[c.type];
   const info = term ? TERM_INFO[term] : null;
   const isInSchedule = term && courseTermInSchedule(courseId, term);
   const sections = (term && c.sections[term]) || [];
+
+  // If opened from a specific calendar block, pre-select that section in state
+  // so that Add/modal reflects the exact time slot the user clicked
+  if (term && clickedSecIdx != null && clickedSecIdx >= 0 && !isInSchedule) {
+    setSelectedSection(courseId, term, clickedSecIdx);
+  }
 
   const prereqs = c.prerequisites.map(p => { const pc = getCourse(p); return pc ? pc.code : p; });
   const offeredIn = Object.entries(TERM_AVAIL)
