@@ -7,7 +7,8 @@
       "WebFetch(domain:courselistings.wpi.edu)",
       "Bash(head:*)",
       "Bash(curl:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(git add:*)"
     ]
   }
 }

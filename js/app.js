@@ -330,6 +330,7 @@ function renderCalendar() {
           My Selection
         </button>
       </div>
+      ${mode === 'mine' ? `<button class="btn btn-primary" onclick="downloadSchedulePDF()">Download PDF</button>` : ''}
     </div>
 
     <div class="calendar-legend">
@@ -1129,27 +1130,8 @@ function downloadSchedulePDF() {
     return days.map(d=>map[d]||d).join('/');
   };
 
-  // Requirements
-  const all = allCourses();
-  const intlCount = all.filter(id=>{const c=getCourse(id);return c&&c.type==='INTL';}).length;
-  const hasHU     = all.includes('HU3900');
-  const hasDS2010 = all.includes('DS2010');
-  const hasDS3010 = all.includes('DS3010');
-  const hasCS4432 = all.includes('CS4432');
-  const hasProj   = all.includes('IQP') || all.includes('MQP');
-  const req = [
-    { label:'2 INTL courses',              done: intlCount>=2, status:`${Math.min(intlCount,2)}/2` },
-    { label:'HU 39XX (C or D term)',       done: hasHU,        status: hasHU?'✓':'Slot reserved' },
-    { label:'DS 2010 — Statistical Modeling', done: hasDS2010,  status: hasDS2010?'✓':'—' },
-    { label:'DS 3010 — Computational Methods',done: hasDS3010,  status: hasDS3010?'✓':'—' },
-    { label:'CS 4432 — Database Systems II',  done: hasCS4432,  status: hasCS4432?'✓':'—' },
-    { label:'IQP or MQP (3 credits)',       done: hasProj,      status: hasProj?'✓':'—' },
-  ];
-  const fallReg  = [...state.schedule.A,...state.schedule.B].filter(id=>{const c=getCourse(id);return c&&c.type!=='WPE';}).length;
-  const springReg= [...state.schedule.C,...state.schedule.D].filter(id=>{const c=getCourse(id);return c&&c.type!=='WPE';}).length;
-
-  // Build term tables
-  const termRows = ['A','B','C','D'].map(t => {
+  // Build one compact table per term — laid out 2×2 to fit one landscape page
+  const termCells = ['A','B','C','D'].map(t => {
     const ti = TERM_INFO[t];
     const courses = state.schedule[t].map(id=>getCourse(id)).filter(Boolean);
     const regular = courses.filter(c=>c.type!=='WPE');
@@ -1159,55 +1141,44 @@ function downloadSchedulePDF() {
     const rows = allRows.map(c => {
       const meta = TYPE_META[c.type]||{color:'#888'};
       const sec  = getSelectedSection(c.id, t);
-      const timeStr = sec?.start ? `${fmtDays(sec.days)}  ${fmtTime(sec.start)} – ${fmtTime(sec.end)}` : 'No fixed time';
-      const prof  = sec?.professor && sec.professor !== 'TBD — Not yet posted' ? sec.professor : '—';
-      const loc   = sec?.location || '—';
-      return `
-        <tr>
-          <td style="padding:6px 8px;border-bottom:1px solid #eee;white-space:nowrap">
-            <span style="display:inline-block;background:${meta.color};color:#fff;
-              font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px;
-              letter-spacing:.04em">${c.type}</span>
-          </td>
-          <td style="padding:6px 8px;border-bottom:1px solid #eee;font-weight:600">${c.code}</td>
-          <td style="padding:6px 8px;border-bottom:1px solid #eee">${c.name}</td>
-          <td style="padding:6px 8px;border-bottom:1px solid #eee;white-space:nowrap;font-size:12px">${timeStr}</td>
-          <td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:12px">${prof}</td>
-          <td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:12px">${loc}</td>
-        </tr>`;
+      const timeStr = sec?.start
+        ? `${fmtDays(sec.days)} ${fmtTime(sec.start)}–${fmtTime(sec.end)}`
+        : 'No fixed time';
+      const prof = sec?.professor && sec.professor !== 'TBD — Not yet posted' ? sec.professor : '—';
+      const loc  = sec?.location || '—';
+      return `<tr>
+        <td style="padding:4px 6px;border-bottom:1px solid #eee">
+          <span style="background:${meta.color};color:#fff;font-size:9px;font-weight:700;
+            padding:1px 5px;border-radius:3px;letter-spacing:.03em">${c.type}</span>
+        </td>
+        <td style="padding:4px 6px;border-bottom:1px solid #eee;font-weight:600;font-size:11px;white-space:nowrap">${c.code}</td>
+        <td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:11px">${c.name}</td>
+        <td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;white-space:nowrap;color:#444">${timeStr}</td>
+        <td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;color:#444">${prof}</td>
+        <td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;color:#444">${loc}</td>
+      </tr>`;
     }).join('');
 
-    return `
-      <div style="margin-bottom:24px;page-break-inside:avoid">
-        <div style="background:${ti.color};color:#fff;padding:10px 14px;border-radius:6px 6px 0 0;
-          display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:15px;font-weight:700">${ti.fullName}</span>
-          <span style="font-size:12px;opacity:.9">${ti.start} → ${ti.end} &nbsp;·&nbsp; ${regular.length} class${regular.length!==1?'es':''}</span>
-        </div>
-        ${allRows.length ? `
-        <table style="width:100%;border-collapse:collapse;border:1px solid #ddd;border-top:none;border-radius:0 0 6px 6px;overflow:hidden">
-          <thead>
-            <tr style="background:#f5f5f5">
-              <th style="padding:6px 8px;text-align:left;font-size:11px;color:#666;font-weight:600;border-bottom:2px solid #ddd">TYPE</th>
-              <th style="padding:6px 8px;text-align:left;font-size:11px;color:#666;font-weight:600;border-bottom:2px solid #ddd">CODE</th>
-              <th style="padding:6px 8px;text-align:left;font-size:11px;color:#666;font-weight:600;border-bottom:2px solid #ddd">COURSE NAME</th>
-              <th style="padding:6px 8px;text-align:left;font-size:11px;color:#666;font-weight:600;border-bottom:2px solid #ddd">DAYS / TIME</th>
-              <th style="padding:6px 8px;text-align:left;font-size:11px;color:#666;font-weight:600;border-bottom:2px solid #ddd">PROFESSOR</th>
-              <th style="padding:6px 8px;text-align:left;font-size:11px;color:#666;font-weight:600;border-bottom:2px solid #ddd">LOCATION</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>` : `<div style="padding:12px 14px;border:1px solid #ddd;border-top:none;color:#999;font-style:italic">No classes scheduled this term.</div>`}
-      </div>`;
-  }).join('');
-
-  // Requirements table
-  const reqRows = req.map(r => `
-    <tr>
-      <td style="padding:5px 8px;border-bottom:1px solid #eee;font-size:22px;line-height:1;color:${r.done?'#27AE60':'#ccc'}">${r.done?'✓':'○'}</td>
-      <td style="padding:5px 8px;border-bottom:1px solid #eee;font-size:13px;color:${r.done?'#1a1a1a':'#555'}">${r.label}</td>
-      <td style="padding:5px 8px;border-bottom:1px solid #eee;font-size:13px;text-align:right;font-weight:600;color:${r.done?'#27AE60':'#AC2B37'}">${r.status}</td>
-    </tr>`).join('');
+    return `<div style="border:1px solid #ddd;border-radius:6px;overflow:hidden">
+      <div style="background:${ti.color};color:#fff;padding:7px 10px;
+        display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:13px;font-weight:700">${ti.fullName}</span>
+        <span style="font-size:10px;opacity:.9">${ti.start} → ${ti.end} · ${regular.length} class${regular.length!==1?'es':''}</span>
+      </div>
+      ${allRows.length ? `
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:#f7f7f7">
+          <th style="padding:4px 6px;text-align:left;font-size:9px;color:#888;font-weight:700;border-bottom:1px solid #ddd;text-transform:uppercase">Type</th>
+          <th style="padding:4px 6px;text-align:left;font-size:9px;color:#888;font-weight:700;border-bottom:1px solid #ddd;text-transform:uppercase">Code</th>
+          <th style="padding:4px 6px;text-align:left;font-size:9px;color:#888;font-weight:700;border-bottom:1px solid #ddd;text-transform:uppercase">Course</th>
+          <th style="padding:4px 6px;text-align:left;font-size:9px;color:#888;font-weight:700;border-bottom:1px solid #ddd;text-transform:uppercase">Time</th>
+          <th style="padding:4px 6px;text-align:left;font-size:9px;color:#888;font-weight:700;border-bottom:1px solid #ddd;text-transform:uppercase">Professor</th>
+          <th style="padding:4px 6px;text-align:left;font-size:9px;color:#888;font-weight:700;border-bottom:1px solid #ddd;text-transform:uppercase">Location</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>` : `<div style="padding:10px;color:#aaa;font-size:11px;font-style:italic">No classes scheduled.</div>`}
+    </div>`;
+  });
 
   const html = `<!DOCTYPE html>
 <html>
@@ -1217,11 +1188,13 @@ function downloadSchedulePDF() {
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-           font-size: 13px; color: #1a1a1a; background: #fff; padding: 32px; max-width: 1100px; margin: 0 auto; }
+           font-size: 12px; color: #1a1a1a; background: #fff;
+           padding: 20px 24px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     @media print {
-      body { padding: 16px; }
+      body { padding: 0; }
       .no-print { display: none !important; }
-      @page { margin: 1.5cm; size: A4 landscape; }
+      @page { margin: 1cm; size: A4 landscape; }
     }
   </style>
 </head>
@@ -1229,56 +1202,30 @@ function downloadSchedulePDF() {
 
   <!-- Header -->
   <div style="display:flex;align-items:center;justify-content:space-between;
-    border-bottom:3px solid #AC2B37;padding-bottom:16px;margin-bottom:24px">
+    border-bottom:3px solid #AC2B37;padding-bottom:10px;margin-bottom:14px">
     <div>
-      <div style="font-size:24px;font-weight:800;color:#AC2B37;letter-spacing:-.5px">WPI Schedule 2026–27</div>
-      <div style="font-size:13px;color:#666;margin-top:3px">Academic Year · Fall 2026 (A+B) + Spring 2027 (C+D)</div>
+      <div style="font-size:20px;font-weight:800;color:#AC2B37;letter-spacing:-.5px">WPI Schedule 2026–27</div>
+      <div style="font-size:11px;color:#666;margin-top:2px">Fall 2026 (A+B) · Spring 2027 (C+D)</div>
     </div>
-    <div style="text-align:right;font-size:12px;color:#888">
+    <div style="text-align:right;font-size:10px;color:#999">
       Generated ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}<br>
-      <em>Verify at courselistings.wpi.edu before registering</em>
+      Verify at courselistings.wpi.edu before registering
     </div>
   </div>
 
-  <!-- Semester summary -->
-  <div style="display:flex;gap:16px;margin-bottom:24px">
-    <div style="flex:1;border:2px solid ${fallReg===7?'#27AE60':fallReg>7?'#AC2B37':'#E67E22'};
-      border-radius:8px;padding:12px 16px;text-align:center">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#666">Fall Semester (A+B)</div>
-      <div style="font-size:28px;font-weight:800;color:${fallReg===7?'#27AE60':fallReg>7?'#AC2B37':'#E67E22'};margin:4px 0">
-        ${fallReg}<span style="font-size:16px;font-weight:400;color:#999">/7</span>
-      </div>
-      <div style="font-size:12px;color:#666">classes scheduled</div>
-    </div>
-    <div style="flex:1;border:2px solid ${springReg===7?'#27AE60':springReg>7?'#AC2B37':'#E67E22'};
-      border-radius:8px;padding:12px 16px;text-align:center">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#666">Spring Semester (C+D)</div>
-      <div style="font-size:28px;font-weight:800;color:${springReg===7?'#27AE60':springReg>7?'#AC2B37':'#E67E22'};margin:4px 0">
-        ${springReg}<span style="font-size:16px;font-weight:400;color:#999">/7</span>
-      </div>
-      <div style="font-size:12px;color:#666">classes scheduled</div>
-    </div>
-    <div style="flex:1;border:2px solid #ddd;border-radius:8px;padding:12px 16px">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#666;margin-bottom:6px">Requirements</div>
-      <table style="width:100%;border-collapse:collapse">${reqRows}</table>
-    </div>
-  </div>
-
-  <!-- Term schedules -->
-  ${termRows}
-
-  <!-- Footer -->
-  <div style="margin-top:24px;padding-top:12px;border-top:1px solid #eee;
-    font-size:11px;color:#999;text-align:center">
-    WPI Schedule 2026–27 · Generated by wpi-schedule-26-27.vercel.app ·
-    All times are from courselistings.wpi.edu (fetched Feb 2026) — verify before registering
+  <!-- 2×2 term grid -->
+  <div class="grid">
+    ${termCells[0]}
+    ${termCells[1]}
+    ${termCells[2]}
+    ${termCells[3]}
   </div>
 
   <!-- Print button (hidden when printing) -->
-  <div class="no-print" style="position:fixed;bottom:24px;right:24px">
+  <div class="no-print" style="position:fixed;bottom:20px;right:20px">
     <button onclick="window.print()"
       style="background:#AC2B37;color:#fff;border:none;border-radius:8px;
-        padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;
+        padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;
         box-shadow:0 4px 12px rgba(172,43,55,.4)">
       Save as PDF
     </button>
