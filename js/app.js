@@ -11,6 +11,7 @@ const DEFAULT_STATE = {
   selectedSections: { A:{}, B:{}, C:{}, D:{} }, // courseId → section index
   project: null,             // 'IQP' | 'MQP'
   projectDist: [0,0,0,0],    // credits per term A B C D
+  termTags: { A: { iqp: false, hu39xx: false }, B: { iqp: false, hu39xx: false }, C: { iqp: false, hu39xx: false }, D: { iqp: false, hu39xx: false } },
   autoResult: null,
   manualTerm: 'A',
   manualFilter: 'all',
@@ -31,11 +32,12 @@ function loadState() {
       const s = Object.assign({}, DEFAULT_STATE, parsed);
       s.schedule = Object.assign({A:[],B:[],C:[],D:[]}, parsed.schedule);
       s.selectedSections = Object.assign({A:{},B:{},C:{},D:{}}, parsed.selectedSections);
+      s.termTags = Object.assign({A:{iqp:false,hu39xx:false},B:{iqp:false,hu39xx:false},C:{iqp:false,hu39xx:false},D:{iqp:false,hu39xx:false}}, parsed.termTags);
       return s;
     }
   } catch(e) {}
   return Object.assign({}, DEFAULT_STATE,
-    { schedule:{A:[],B:[],C:[],D:[]}, selectedSections:{A:{},B:{},C:{},D:{}} });
+    { schedule:{A:[],B:[],C:[],D:[]}, selectedSections:{A:{},B:{},C:{},D:{}}, termTags:{A:{iqp:false,hu39xx:false},B:{iqp:false,hu39xx:false},C:{iqp:false,hu39xx:false},D:{iqp:false,hu39xx:false}} });
 }
 function saveState() {
   try { localStorage.setItem('wpi-2627', JSON.stringify(state)); } catch(e) {}
@@ -67,6 +69,11 @@ function renderActiveView() {
 function regCount(term) {
   return state.schedule[term].filter(id => { const c=getCourse(id); return c&&c.type!=='WPE'; }).length;
 }
+function effectiveRegCount(term) {
+  const reg = regCount(term);
+  const tags = state.termTags?.[term] || { iqp: false, hu39xx: false };
+  return reg + (tags.iqp ? 1 : 0) + (tags.hu39xx ? 1 : 0);
+}
 function allCourses() {
   return ['A','B','C','D'].flatMap(t => state.schedule[t]);
 }
@@ -86,6 +93,20 @@ function setSelectedSection(courseId, term, idx) {
   if (!state.selectedSections[term]) state.selectedSections[term] = {};
   state.selectedSections[term][courseId] = idx;
   saveState();
+}
+
+function toggleTermTag(term, tag) {
+  if (!state.termTags) state.termTags = { A:{iqp:false,hu39xx:false}, B:{iqp:false,hu39xx:false}, C:{iqp:false,hu39xx:false}, D:{iqp:false,hu39xx:false} };
+  if (!state.termTags[term]) state.termTags[term] = { iqp: false, hu39xx: false };
+  state.termTags[term][tag] = !state.termTags[term][tag];
+  // HU 39XX is one term only — uncheck other terms when setting
+  if (tag === 'hu39xx' && state.termTags[term].hu39xx) {
+    for (const t of ['A','B','C','D']) {
+      if (t !== term) state.termTags[t].hu39xx = false;
+    }
+  }
+  saveState();
+  renderCalendar();
 }
 
 // Named handler for section dropdown — captures value from event.target BEFORE
@@ -161,10 +182,10 @@ function renderDashboard() {
   const pct = Math.round(reqMet / req.length * 100);
 
   // Validation
-  const v = new ScheduleValidator(state.schedule, state.project, state.projectDist).validate();
+  const v = new ScheduleValidator(state.schedule, state.project, state.projectDist, state.termTags).validate();
 
-  const fallReg  = [...state.schedule.A, ...state.schedule.B].filter(id=>{const c=getCourse(id);return c&&c.type!=='WPE';}).length;
-  const springReg= [...state.schedule.C, ...state.schedule.D].filter(id=>{const c=getCourse(id);return c&&c.type!=='WPE';}).length;
+  const fallReg  = effectiveRegCount('A') + effectiveRegCount('B');
+  const springReg= effectiveRegCount('C') + effectiveRegCount('D');
 
   el.innerHTML = `
     <div class="page-header">
@@ -237,7 +258,9 @@ function renderTermCard(term) {
   const courses = state.schedule[term].map(id => getCourse(id)).filter(Boolean);
   const regular = courses.filter(c => c.type !== 'WPE');
   const pe = courses.filter(c => c.type === 'WPE');
-  const count = regular.length;
+  const tags = state.termTags?.[term] || { iqp: false, hu39xx: false };
+  const tagCount = (tags.iqp ? 1 : 0) + (tags.hu39xx ? 1 : 0);
+  const count = regular.length + tagCount;
   const status = count === 0 ? '' : count < 3 ? 'under' : count > 4 ? 'over' : 'ok';
 
   return `
@@ -252,11 +275,13 @@ function renderTermCard(term) {
           <span class="count-badge ${status}">${count} class${count!==1?'es':''}</span>
           ${pe.length ? `<span class="pe-badge">+ ${pe.map(c=>c.code).join(', ')}</span>` : ''}
         </div>
-        ${regular.length === 0 ? '<div class="empty-term">No classes scheduled</div>' :
-          regular.map(c => `
+        ${regular.length === 0 && tagCount === 0 ? '<div class="empty-term">No classes scheduled</div>' :
+          [...regular.map(c => `
             <div class="term-course-chip" style="background:${TYPE_META[c.type].color}" onclick="openModal('${c.id}','${term}')">
               ${c.code}
-            </div>`).join('')}
+            </div>`),
+          tags.iqp ? `<div class="term-course-chip" style="background:${TYPE_META.IQP.color}">IQP</div>` : '',
+          tags.hu39xx ? `<div class="term-course-chip" style="background:${TYPE_META.HU.color}">HU 39XX</div>` : ''].filter(Boolean).join('')}
       </div>
       <button class="btn-term-edit" onclick="state.manualTerm='${term}';showView('manual')">
         Edit ${term} term
@@ -271,6 +296,7 @@ function clearSchedule() {
   state.selectedSections = { A:{}, B:{}, C:{}, D:{} };
   state.project = null;
   state.projectDist = [0,0,0,0];
+  state.termTags = { A:{iqp:false,hu39xx:false}, B:{iqp:false,hu39xx:false}, C:{iqp:false,hu39xx:false}, D:{iqp:false,hu39xx:false} };
   saveState();
   renderDashboard();
 }
@@ -323,6 +349,7 @@ function renderCalendar() {
           </button>`).join('')}
       </div>
       <div class="mode-toggle">
+        <button class="btn btn-primary" onclick="downloadSchedulePDF()">Download Schedule</button>
         <button class="toggle-btn ${mode==='all'?'active':''}" onclick="state.calendarMode='all';renderCalendar()">
           All Available
         </button>
@@ -330,7 +357,12 @@ function renderCalendar() {
           My Selection
         </button>
       </div>
-      ${mode === 'mine' ? `<button class="btn btn-primary" onclick="downloadSchedulePDF()">Download PDF</button>` : ''}
+    </div>
+
+    <div class="term-tags-bar">
+      <span class="term-tags-label">${term} Term tags (count as 1 class each):</span>
+      <label class="term-tag-check"><input type="checkbox" ${(state.termTags?.[term]?.iqp)?'checked':''} onchange="toggleTermTag('${term}','iqp')"> IQP this term</label>
+      <label class="term-tag-check"><input type="checkbox" ${(state.termTags?.[term]?.hu39xx)?'checked':''} onchange="toggleTermTag('${term}','hu39xx')"> HU 39XX this term</label>
     </div>
 
     <div class="calendar-legend">
@@ -652,7 +684,7 @@ function renderAutoPreferences() {
 }
 
 function renderAutoResult(schedule, mode) {
-  const v = new ScheduleValidator(schedule, state.project, state.projectDist).validate();
+  const v = new ScheduleValidator(schedule, state.project, state.projectDist, state.termTags).validate();
   const all = Object.values(schedule).flat();
   const fallReg  = [...schedule.A,...schedule.B].filter(id=>{const c=getCourse(id);return c&&c.type!=='WPE';}).length;
   const springReg= [...schedule.C,...schedule.D].filter(id=>{const c=getCourse(id);return c&&c.type!=='WPE';}).length;
@@ -778,7 +810,7 @@ function renderManual() {
     typeGroups[c.type].push(c);
   }
 
-  const v = new ScheduleValidator(state.schedule, state.project, state.projectDist).validate();
+  const v = new ScheduleValidator(state.schedule, state.project, state.projectDist, state.termTags).validate();
 
   el.innerHTML = `
     <div class="page-header">
@@ -1133,9 +1165,12 @@ function downloadSchedulePDF() {
   // Build one compact table per term — stacked vertically for portrait layout
   const termCells = ['A','B','C','D'].map(t => {
     const ti = TERM_INFO[t];
+    const tags = state.termTags?.[t] || { iqp: false, hu39xx: false };
     const courses = state.schedule[t].map(id=>getCourse(id)).filter(Boolean);
     const regular = courses.filter(c=>c.type!=='WPE');
     const pe      = courses.filter(c=>c.type==='WPE');
+    const tagCount = (tags.iqp ? 1 : 0) + (tags.hu39xx ? 1 : 0);
+    const effectiveClassCount = regular.length + tagCount;
     const allRows = [...regular,...pe];
 
     const rows = allRows.map(c => {
@@ -1159,13 +1194,20 @@ function downloadSchedulePDF() {
       </tr>`;
     }).join('');
 
+    const tagRows = [];
+    const iqpMeta = TYPE_META.IQP || { color:'#B7950B' };
+    const huMeta = TYPE_META.HU || { color:'#CA6F1E' };
+    if (tags.iqp) tagRows.push(`<tr><td style="padding:4px 6px;border-bottom:1px solid #eee"><span style="background:${iqpMeta.color};color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px">IQP</span></td><td style="padding:4px 6px;border-bottom:1px solid #eee;font-weight:600;font-size:11px">IQP</td><td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:11px">Interactive Qualifying Project (1 cr)</td><td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;color:#444">No fixed time</td><td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;color:#444">—</td><td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;color:#444">—</td></tr>`);
+    if (tags.hu39xx) tagRows.push(`<tr><td style="padding:4px 6px;border-bottom:1px solid #eee"><span style="background:${huMeta.color};color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px">HU</span></td><td style="padding:4px 6px;border-bottom:1px solid #eee;font-weight:600;font-size:11px">HU 39XX</td><td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:11px">Upper-level Humanities (1 cr, not yet posted)</td><td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;color:#444">No fixed time</td><td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;color:#444">—</td><td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;color:#444">—</td></tr>`);
+    const allTableRows = rows + tagRows.join('');
+
     return `<div style="border:1px solid #ddd;border-radius:6px;overflow:hidden">
       <div style="background:#AC2B37;color:#fff;padding:7px 10px;
         display:flex;justify-content:space-between;align-items:center">
         <span style="font-size:13px;font-weight:700">${ti.fullName}</span>
-        <span style="font-size:10px;opacity:.9">${ti.start} → ${ti.end} · ${regular.length} class${regular.length!==1?'es':''}</span>
+        <span style="font-size:10px;opacity:.9">${ti.start} → ${ti.end} · ${effectiveClassCount} class${effectiveClassCount!==1?'es':''}</span>
       </div>
-      ${allRows.length ? `
+      ${allRows.length || tagRows.length ? `
       <table style="width:100%;border-collapse:collapse">
         <thead><tr style="background:#f7f7f7">
           <th style="padding:4px 6px;text-align:left;font-size:9px;color:#888;font-weight:700;border-bottom:1px solid #ddd;text-transform:uppercase">Type</th>
@@ -1175,7 +1217,7 @@ function downloadSchedulePDF() {
           <th style="padding:4px 6px;text-align:left;font-size:9px;color:#888;font-weight:700;border-bottom:1px solid #ddd;text-transform:uppercase">Professor</th>
           <th style="padding:4px 6px;text-align:left;font-size:9px;color:#888;font-weight:700;border-bottom:1px solid #ddd;text-transform:uppercase">Location</th>
         </tr></thead>
-        <tbody>${rows}</tbody>
+        <tbody>${allTableRows}</tbody>
       </table>` : `<div style="padding:10px;color:#aaa;font-size:11px;font-style:italic">No classes scheduled.</div>`}
     </div>`;
   });

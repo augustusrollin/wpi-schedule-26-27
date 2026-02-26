@@ -236,6 +236,18 @@ ul { list-style: none; }
 .toggle-btn.active { background: var(--wpi-red); border-color: var(--wpi-red); color: #fff; }
 .toggle-btn:hover:not(.active) { border-color: var(--wpi-gray); }
 
+.term-tags-bar {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 10px 14px; background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); margin-bottom: 14px;
+}
+.term-tags-label { font-size: .8rem; font-weight: 600; color: var(--text-muted); }
+.term-tag-check {
+  display: flex; align-items: center; gap: 6px;
+  font-size: .85rem; font-weight: 500; color: var(--text); cursor: pointer;
+}
+.term-tag-check input { accent-color: var(--wpi-red); }
+
 /* ── CALENDAR LEGEND ───────────────────────────────────────── */
 .calendar-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
 .legend-chip {

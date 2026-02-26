@@ -4,12 +4,14 @@
 // SCHEDULE VALIDATOR
 // ============================================================
 class ScheduleValidator {
-  constructor(schedule, project, projectDist) {
+  constructor(schedule, project, projectDist, termTags) {
     // schedule: { A:['CS4341',...], B:[...], C:[...], D:[...] }
     // projectDist: array [A_credits, B_credits, C_credits, D_credits] or null
+    // termTags: { A:{iqp,hu39xx}, ... } — tags count as 1 class each
     this.sch = schedule;
     this.project = project;       // 'IQP' | 'MQP' | null
     this.dist = projectDist;      // e.g. [1,1,1,0] or [3,0,0,0]
+    this.termTags = termTags || {};
     this.TERMS = ['A','B','C','D'];
   }
 
@@ -27,12 +29,15 @@ class ScheduleValidator {
     return { valid: errors.length === 0, errors, warnings };
   }
 
-  // regular (non-WPE) count for one term
+  // regular (non-WPE) count for one term, including IQP/HU 39XX tags
   _reg(term) {
-    return this.sch[term].filter(id => {
+    const courseCount = this.sch[term].filter(id => {
       const c = getCourse(id);
       return c && c.type !== 'WPE';
     }).length;
+    const tags = this.termTags[term] || { iqp: false, hu39xx: false };
+    const tagCount = (tags.iqp ? 1 : 0) + (tags.hu39xx ? 1 : 0);
+    return courseCount + tagCount;
   }
 
   _creditLimits(errors) {
@@ -44,12 +49,17 @@ class ScheduleValidator {
   }
 
   _semesterTotals(errors, warnings) {
-    const fall   = [...this.sch.A, ...this.sch.B].filter(id => { const c=getCourse(id); return c && c.type!=='WPE'; });
-    const spring = [...this.sch.C, ...this.sch.D].filter(id => { const c=getCourse(id); return c && c.type!=='WPE'; });
-    const check = (name, arr) => {
-      if (arr.length > 7)  errors.push(`${name}: ${arr.length} classes — maximum is 7.`);
-      else if (arr.length < 7 && arr.length > 0)
-        warnings.push(`${name}: ${arr.length}/7 classes scheduled.`);
+    const regWithTags = (term) => {
+      const n = this.sch[term].filter(id => { const c=getCourse(id); return c && c.type!=='WPE'; }).length;
+      const tags = this.termTags[term] || { iqp: false, hu39xx: false };
+      return n + (tags.iqp ? 1 : 0) + (tags.hu39xx ? 1 : 0);
+    };
+    const fall   = regWithTags('A') + regWithTags('B');
+    const spring = regWithTags('C') + regWithTags('D');
+    const check = (name, count) => {
+      if (count > 7)  errors.push(`${name}: ${count} classes — maximum is 7.`);
+      else if (count < 7 && count > 0)
+        warnings.push(`${name}: ${count}/7 classes scheduled.`);
     };
     check('Fall semester (A+B)', fall);
     check('Spring semester (C+D)', spring);
