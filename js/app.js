@@ -155,32 +155,252 @@ function getEliminatedInTerm(term) {
 }
 
 // ============================================================
+// GRADUATION REQUIREMENTS
+// ============================================================
+function renderGradRequirements() {
+  const all = allCourses();
+  const iqpTagCount = ['A','B','C','D'].filter(t => state.termTags?.[t]?.iqp).length;
+  const iqpCr = (state.project==='IQP' ? (state.projectDist?.reduce((a,b)=>a+b,0)||0) : 0) + iqpTagCount;
+  const mqpCr = state.project==='MQP' ? (state.projectDist?.reduce((a,b)=>a+b,0)||0) : 0;
+  const wpeInPlan = all.filter(id => { const c=getCourse(id); return c&&c.type==='WPE'; });
+
+  // Courses completed in prior terms (from tracking sheet)
+  const PRIOR = new Set([
+    'INTL2100','EN1222','HI1330',          // HUA
+    'WPE1601',                              // WPE
+    'AP_MACRO',                             // Social Science
+    'CS_OOD','CS2223',                      // Foundation CS
+    'MA1021','MA1022','MA2611','MA2612','MA2071', // Foundation Math
+    'DS1010',                               // AI Core
+    'ETR1100','MIS3010',                    // Disciplinary Electives
+    'CS3431',                               // Concentration
+    'BB1002','BB1004',                      // Natural & Engineering Science
+    'MA1024','MA2051','MA2621',             // Free Electives
+  ]);
+
+  // Render a requirement row
+  // status: 'prior' | 'needed' | 'manual' | 'empty'
+  const mkRow = (id, label, status) => {
+    const done = status === 'prior' || (status === 'needed' && all.includes(id));
+    const cls  = done ? (status === 'prior' ? 'prior' : 'done') : '';
+    const badge = status === 'manual' ? '<span class="req-manual-badge">manual</span>' : '';
+    return `<div class="req-item ${cls}">
+      <span class="req-check">${done?'✓':'○'}</span>
+      <span class="req-label">${label}</span>
+      ${badge}
+    </div>`;
+  };
+
+  // Credit progress rows (IQP / MQP)
+  const creditRows = (have, need) =>
+    Array.from({length:need}, (_,i) => {
+      const done = i < have;
+      return `<div class="req-item ${done?'done':''}">
+        <span class="req-check">${done?'✓':'○'}</span>
+        <span class="req-label">Credit ${i+1}</span>
+      </div>`;
+    }).join('');
+
+  // WPE rows: PE 1601 (prior) + up to 3 from plan
+  const wpeRows = [mkRow('WPE1601','WPE 1601','prior'),
+    ...Array.from({length:3}, (_,i) => {
+      const wid = wpeInPlan[i];
+      return wid ? mkRow(wid, getCourse(wid)?.code||`WPE ${i+2}`, 'needed')
+                 : mkRow(`__wpe${i}`, `WPE Course ${i+2}`, 'empty');
+    })].join('');
+
+  // INTL courses in this year's plan (excluding the prior INTL 2100)
+  const hasHU39xx = ['A','B','C','D'].some(t => state.termTags?.[t]?.hu39xx);
+  const intlInPlan = all.filter(id => { const c=getCourse(id); return c&&c.type==='INTL'&&id!=='INTL2100'; });
+  const hua2id = intlInPlan[0] || null;
+  const hua3id = intlInPlan[1] || null;
+  const huaLabel = id => { const c=getCourse(id); return c ? `${c.code} — ${c.name}` : id; };
+  const hu3900Label = () => { const c=getCourse('HU3900'); return c ? `${c.code} — ${c.name}` : 'HU 3900/3910 — Inquiry Seminar'; };
+
+  // Category definitions
+  const categories = [
+    { title:'Humanities & Arts', note:'6 required', rows:[
+      mkRow('INTL2100','INTL 2100 — Approaches to Global Studies','prior'),
+      hua2id ? mkRow(hua2id, huaLabel(hua2id), 'needed') : mkRow('__hua2','HUA Depth 2 (INTL / HI / HU)','manual'),
+      hua3id ? mkRow(hua3id, huaLabel(hua3id), 'needed') : mkRow('__hua3','HUA Depth 3 (INTL / HI / HU)','manual'),
+      hasHU39xx ? `<div class="req-item done"><span class="req-check">✓</span><span class="req-label">${hu3900Label()}</span></div>`
+                : mkRow('HU3900', hu3900Label(), 'needed'),
+      mkRow('EN1222','EN 1222 — Shakespeare','prior'),
+      mkRow('HI1330','HI 1330 — Science and Technology','prior'),
+    ], priorCount:3, manualCount: (hua2id?0:1)+(hua3id?0:1),
+       neededIds:[...(all.includes('HU3900')?['HU3900']:[]), ...(hua2id?[hua2id]:[]), ...(hua3id?[hua3id]:[])],
+       extraPlanCount: hasHU39xx && !all.includes('HU3900') ? 1 : 0 },
+
+    { title:'Wellness & PE', note:'1 credit required (4 × 0.25)', rawRows: wpeRows,
+      doneCount: (1 + Math.min(wpeInPlan.length, 3)) * 0.25, totalCount: 1,
+      priorCredit: 0.25, planCredit: Math.min(wpeInPlan.length, 3) * 0.25,
+      countLabel: () => `${((1 + Math.min(wpeInPlan.length, 3)) * 0.25).toFixed(2)}/1` },
+
+    { title:'Social Science', note:'2 required', rows:[
+      mkRow('AP_MACRO','AP Macroeconomics (retroactive)','prior'),
+      mkRow('__ss2','Social Science Course 2','manual'),
+    ], priorCount:1, manualCount:1, neededIds:[] },
+
+    { title:'IQP', note:'3 credits required',
+      rawRows: creditRows(iqpCr, 3),
+      doneCount: Math.min(iqpCr,3), totalCount: 3 },
+
+    { title:'MQP', note:'3 credits required',
+      rawRows: creditRows(mqpCr, 3),
+      doneCount: Math.min(mqpCr,3), totalCount: 3 },
+
+    { title:'Foundation: CS', note:'3 required', rows:[
+      mkRow('CS1004','CS 1004 — Intro Programming','needed'),
+      mkRow('CS_OOD','CS 2102/2119 — OO Design','prior'),
+      mkRow('CS2223','CS 2223 — Algorithms','prior'),
+    ], priorCount:2, manualCount:0, neededIds:['CS1004'] },
+
+    { title:'Foundation: Math', note:'5 required', rows:[
+      mkRow('MA1021','MA 1021 — Calculus I (retroactive)','prior'),
+      mkRow('MA1022','MA 1022 — Calculus II (retroactive)','prior'),
+      mkRow('MA2611','MA 2611 — Applied Stats I','prior'),
+      mkRow('MA2612','MA 2612 — Applied Stats II','prior'),
+      mkRow('MA2071','MA 2071/2072 — Linear Algebra','prior'),
+    ], priorCount:5, manualCount:0, neededIds:[] },
+
+    { title:'AI Foundations', note:'3 required', rows:[
+      mkRow('DS1010','DS 1010 — Foundations of Data Science','prior'),
+      mkRow('DS2010','DS 2010 — Statistical Modeling','needed'),
+      mkRow('DS3010','DS 3010 — Computational Methods','needed'),
+    ], priorCount:1, manualCount:0, neededIds:['DS2010','DS3010'] },
+
+    { title:'AI Overview', note:'1 required', rows:[
+      mkRow('CS4341','CS 4341 — Introduction to AI','needed'),
+    ], priorCount:0, manualCount:0, neededIds:['CS4341'] },
+
+    { title:'Machine Learning', note:'1 required', rows:[
+      mkRow('CS4342','CS 4342 — Machine Learning','needed'),
+    ], priorCount:0, manualCount:0, neededIds:['CS4342'] },
+
+    { title:'Interaction & Reasoning', note:'1 required', rows:[
+      mkRow('CS4344','CS 4344 — NLP / LLM','needed'),
+    ], priorCount:0, manualCount:0, neededIds:['CS4344'] },
+
+    { title:'Additional AI Core', note:'2 required', rows:[
+      mkRow('CS4343','CS 4343 — Deep Learning','needed'),
+      mkRow('CS4345','CS 4345 — Multi-Agent Systems','needed'),
+    ], priorCount:0, manualCount:0, neededIds:['CS4343','CS4345'] },
+
+    { title:'AI Ethics & Social Implications', note:'1 required', rows:[
+      mkRow('CS3043','CS 3043 — AI Ethics & Social Implications','needed'),
+    ], priorCount:0, manualCount:0, neededIds:['CS3043'] },
+
+    { title:'Disciplinary Electives', note:'2 required', rows:[
+      mkRow('ETR1100','ETR 1100 — Entrepreneurship','prior'),
+      mkRow('MIS3010','MIS 3010 — Innovation','prior'),
+    ], priorCount:2, manualCount:0, neededIds:[] },
+
+    { title:'Concentration: Advanced AI', note:'6 required', rows:[
+      mkRow('CS3431','CS 3431 — Database Systems I','prior'),
+      mkRow('CS3733','CS 3733 — Software Engineering','needed'),
+      mkRow('CS4432','CS 4432 — Database Systems II','needed'),
+      mkRow('CS4433','CS 4433 — Big Data Management','needed'),
+      mkRow('CS4445','CS 4445 — Data Mining','needed'),
+      mkRow('DS4635','DS 4635 — Data Analytics','needed'),
+    ], priorCount:1, manualCount:0,
+       neededIds:['CS3733','CS4432','CS4433','CS4445','DS4635'] },
+
+    { title:'Natural & Eng. Science', note:'2 required', rows:[
+      mkRow('BB1002','BB 1002 — Environmental Biology','prior'),
+      mkRow('BB1004','BB 1004 — Human Biology','prior'),
+    ], priorCount:2, manualCount:0, neededIds:[] },
+
+    { title:'Free Electives', note:'3 required', rows:[
+      mkRow('MA1024','MA 1024 — Calculus IV','prior'),
+      mkRow('MA2051','MA 2051 — Differential Equations','prior'),
+      mkRow('MA2621','MA 2621 — Probability Applications','prior'),
+    ], priorCount:3, manualCount:0, neededIds:[] },
+  ];
+
+  // Compute done/total for each category and overall
+  let grandPrior = 0, grandPlan = 0, grandTotal = 0;
+  const computed = categories.map(cat => {
+    let prior, plan, total;
+    if (cat.doneCount !== undefined) {
+      prior = cat.priorCredit ?? 0;
+      plan  = cat.planCredit  ?? cat.doneCount;
+      total = cat.totalCount;
+    } else {
+      prior = cat.priorCount;
+      plan  = cat.neededIds.filter(id => all.includes(id)).length + (cat.extraPlanCount || 0);
+      total = cat.priorCount + cat.neededIds.length + (cat.manualCount || 0) + (cat.extraPlanCount || 0);
+    }
+    grandPrior += prior;
+    grandPlan  += plan;
+    grandTotal += total;
+    const done = prior + plan;
+    // Only mark all-done (green border, sink to bottom) when every item was prior-completed
+    const allDone = prior === total && total > 0;
+    return { cat, prior, plan, done, total, allDone };
+  });
+
+  // Sort: incomplete first (by explicit order), fully done at bottom
+  const ORDER = [
+    'Concentration: Advanced AI',
+    'AI Foundations',
+    'AI Overview',
+    'Machine Learning',
+    'Interaction & Reasoning',
+    'Additional AI Core',
+    'AI Ethics & Social Implications',
+    'Foundation: CS',
+    'IQP',
+    'MQP',
+    'Humanities & Arts',
+    'Wellness & PE',
+    'Social Science',
+    'Foundation: Math',
+    'Disciplinary Electives',
+    'Natural & Eng. Science',
+    'Free Electives',
+  ];
+  computed.sort((a, b) => {
+    if (a.allDone !== b.allDone) return a.allDone - b.allDone;
+    return (ORDER.indexOf(a.cat.title) ?? 99) - (ORDER.indexOf(b.cat.title) ?? 99);
+  });
+
+  const cards = computed.map(({ cat, done, total, allDone }) => {
+    const rowsHtml = cat.rawRows || cat.rows.join('');
+    return `<div class="grad-cat-card ${allDone?'all-done':''}">
+      <div class="grad-cat-header">
+        <span class="grad-cat-title">${cat.title}</span>
+        <span class="grad-cat-count ${allDone?'done':''}">${cat.countLabel ? cat.countLabel() : `${done}/${total}`}</span>
+      </div>
+      <div class="grad-cat-items">${rowsHtml}</div>
+    </div>`;
+  }).join('');
+
+  const grandDone = grandPrior + grandPlan;
+  const pctPrior = grandTotal > 0 ? (grandPrior / grandTotal * 100).toFixed(1) : 0;
+  const pctPlan  = grandTotal > 0 ? (grandPlan  / grandTotal * 100).toFixed(1) : 0;
+  const pct = grandTotal > 0 ? Math.round(grandDone / grandTotal * 100) : 0;
+
+  return `
+    <div class="grad-req-card">
+      <div class="req-progress-bar" style="position:relative;background:#e5e7eb">
+        <div style="position:absolute;left:0;top:0;height:100%;width:${pctPrior}%;background:#16a34a;border-radius:4px 0 0 4px;transition:width .4s"></div>
+        <div style="position:absolute;left:${pctPrior}%;top:0;height:100%;width:${pctPlan}%;background:#fde68a;transition:width .4s"></div>
+      </div>
+      <div class="req-pct">
+        ${grandDone} of ${grandTotal} trackable requirements complete &nbsp;·&nbsp; ${pct}% toward graduation
+        &nbsp;&nbsp;<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#d1fae5;border:1px solid #6ee7b7;vertical-align:middle"></span> previously completed / registered for
+        &nbsp;<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#fef9c3;border:1px solid #fde68a;vertical-align:middle"></span> planned this year
+      </div>
+      <div class="grad-cats-grid">${cards}</div>
+    </div>
+  `;
+}
+
+// ============================================================
 // DASHBOARD
 // ============================================================
 function renderDashboard() {
   const el = document.getElementById('view-dashboard');
-
-  // Requirements check
-  const all = allCourses();
-  const intlCount = all.filter(id => { const c=getCourse(id); return c&&c.type==='INTL'; }).length;
-  const hasHU     = all.includes('HU3900') || ['A','B','C','D'].some(t => state.termTags?.[t]?.hu39xx);
-  const hasDS2010 = all.includes('DS2010');
-  const hasDS3010 = all.includes('DS3010');
-  const hasCS4432 = all.includes('CS4432');
-  const iqpTagCount = ['A','B','C','D'].filter(t => state.termTags?.[t]?.iqp).length;
-  const hasProj   = all.includes('IQP') || all.includes('MQP') || (state.project === 'IQP' && state.projectDist?.reduce((a,b)=>a+b,0) === 3) || iqpTagCount >= 3;
-
-  const req = [
-    { label:'2 INTL courses (before HU 3900)',  done: intlCount >= 2, partial:`${Math.min(intlCount,2)}/2` },
-    { label:'HU 39XX (C or D term — not yet posted)', done: hasHU, partial: hasHU?'✓':'Slot reserved' },
-    { label:'DS 2010 — Statistical Modeling',   done: hasDS2010,      partial: hasDS2010?'✓':'0/1' },
-    { label:'DS 3010 — Computational Methods',  done: hasDS3010,      partial: hasDS3010?'✓':'0/1' },
-    { label:'CS 4432 — Database Systems II',    done: hasCS4432,      partial: hasCS4432?'✓':'0/1' },
-    { label:'IQP or MQP (3 credits, no gaps)',  done: hasProj,        partial: hasProj?'✓':'0/1' },
-  ];
-
-  const reqMet = req.filter(r => r.done).length;
-  const pct = Math.round(reqMet / req.length * 100);
 
   // Validation
   const v = new ScheduleValidator(state.schedule, state.project, state.projectDist, state.termTags).validate();
@@ -212,22 +432,6 @@ function renderDashboard() {
         <ul>${v.warnings.map(w=>`<li>${w}</li>`).join('')}</ul>
       </div>` : ''}
 
-    <div class="section-title">Requirements Progress</div>
-    <div class="requirements-card">
-      <div class="req-progress-bar">
-        <div class="req-progress-fill" style="width:${pct}%"></div>
-      </div>
-      <div class="req-pct">${reqMet} of ${req.length} completed</div>
-      <div class="req-grid">
-        ${req.map(r=>`
-          <div class="req-item ${r.done?'done':''}">
-            <span class="req-check">${r.done?'✓':'○'}</span>
-            <span class="req-label">${r.label}</span>
-            <span class="req-status">${r.partial}</span>
-          </div>`).join('')}
-      </div>
-    </div>
-
     <div class="section-title">Term Schedule</div>
     <div class="term-cards">
       ${['A','B','C','D'].map(t => renderTermCard(t)).join('')}
@@ -245,6 +449,9 @@ function renderDashboard() {
         <div class="sem-desc">classes scheduled</div>
       </div>
     </div>
+
+    <div class="section-title">Graduation Requirements</div>
+    ${renderGradRequirements()}
   `;
 }
 

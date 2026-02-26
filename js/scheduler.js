@@ -154,9 +154,12 @@ class ScheduleValidator {
     }
 
     // Verify schedule has project entries where dist > 0
+    // Count both explicit schedule entries AND term tag credits
     for (let i=0; i<4; i++) {
       const t = this.TERMS[i];
-      const count = this.sch[t].filter(id => id === this.project).length;
+      const schedCount = this.sch[t].filter(id => id === this.project).length;
+      const tagCount   = (this.termTags?.[t]?.iqp && this.project === 'IQP') ? 1 : 0;
+      const count = schedCount + tagCount;
       if (count !== this.dist[i]) {
         warnings.push(`${t} term: ${this.project} distribution says ${this.dist[i]} credit(s) but schedule has ${count}.`);
       }
