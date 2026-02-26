@@ -193,9 +193,9 @@ class ScheduleGenerator {
     const afterD2010 = d2010t ? this.TERMS.slice(this.TERMS.indexOf(d2010t)+1) : ['C','D'];
     this._place(s, 'DS3010', afterD2010.filter(t => TERM_AVAIL[t].includes('DS3010')));
 
-    // 2x INTL
+    // 2x INTL — shuffled so each generation picks a different pair
     let intlDone = 0;
-    for (const id of ['INTL2310','INTL2210','INTL1100','INTL2410','INTL2320','INTL2510','INTL2110']) {
+    for (const id of this._shuffle(['INTL2310','INTL2210','INTL1100','INTL2410','INTL2320','INTL2510','INTL2110','INTL2910','INTL2100','INTL2420'])) {
       if (intlDone >= 2) break;
       if (this._place(s, id, this.TERMS)) intlDone++;
     }
@@ -203,10 +203,11 @@ class ScheduleGenerator {
     // HU 3900 (placeholder — not yet posted; reserves a slot in C or D)
     this._place(s, 'HU3900', ['C','D']);
 
-    // Fill to 7+7
-    this._fill(s, ['CS4341','CS3733','CS4342','CS4343','CS4344','CS4345',
-                   'CS4432','CS4433','CS4445','CS4804','CS3043',
-                   'INTL2310','INTL2410','INTL2210','INTL2320','INTL1100','INTL2510','INTL2110','HU3900']);
+    // Fill to 7+7 — shuffled so elective choices vary each run
+    this._fill(s, this._shuffle(['CS4341','CS3733','CS4342','CS4343','CS4344','CS4345',
+                   'CS4433','CS4445','CS4804','CS3043',
+                   'EN1219','EN1251','EN1439','EN2219','EN2225','EN2251','EN3231',
+                   'INTL2310','INTL2410','INTL2210','INTL2320','INTL1100','INTL2510','INTL2110','INTL2910','INTL2100','INTL2420']));
 
     return s;
   }
@@ -254,9 +255,9 @@ class ScheduleGenerator {
     const afterD = d2010t ? this.TERMS.slice(this.TERMS.indexOf(d2010t)+1) : ['C','D'];
     this._place(s, 'DS3010', afterD.filter(t => TERM_AVAIL[t].includes('DS3010')));
 
-    // 2x INTL — prefer A for INTL 2310, pick others to balance
+    // 2x INTL — shuffled so each generation picks a different pair
     let intlDone = 0;
-    for (const id of ['INTL2310','INTL2210','INTL1100','INTL2410','INTL2320','INTL2510','INTL2110']) {
+    for (const id of this._shuffle(['INTL2310','INTL2210','INTL1100','INTL2410','INTL2320','INTL2510','INTL2110','INTL2910','INTL2100','INTL2420'])) {
       if (intlDone >= 2) break;
       if (this._place(s, id, this.TERMS)) intlDone++;
     }
@@ -264,9 +265,10 @@ class ScheduleGenerator {
     // HU 3900 (placeholder — not yet posted; reserves a slot in C or D)
     this._place(s, 'HU3900', ['C','D']);
 
-    // Fill remaining slots
-    this._fill(s, ['CS3043','CS4343','CS4344','CS4433','CS4445','CS4804',
-                   'INTL2510','INTL2110','INTL2310','INTL2410','INTL2210','INTL2320','INTL1100']);
+    // Fill remaining slots — shuffled so elective choices vary each run
+    this._fill(s, this._shuffle(['CS3043','CS4343','CS4344','CS4433','CS4445','CS4804',
+                   'EN1219','EN1251','EN1439','EN2219','EN2225','EN2251','EN3231',
+                   'INTL2510','INTL2110','INTL2310','INTL2410','INTL2210','INTL2320','INTL1100','INTL2910','INTL2100','INTL2420']));
 
     // Add PE to 3-class terms
     for (const t of this.TERMS) {
@@ -285,6 +287,15 @@ class ScheduleGenerator {
   }
 
   // ── helpers ──
+  _shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
   _reg(s, term) {
     return s[term].filter(id => { const c=getCourse(id); return c && c.type!=='WPE'; }).length;
   }

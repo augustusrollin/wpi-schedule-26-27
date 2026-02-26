@@ -645,7 +645,8 @@ function renderAutoResult(schedule, mode) {
       <div class="result-header">
         <h3>Generated Schedule</h3>
         <div class="result-actions">
-          <button class="btn btn-outline" onclick="applyAutoSchedule()">Apply to My Schedule</button>
+          <button class="btn btn-outline" onclick="generateSchedule('${mode}')">Regenerate</button>
+          <button class="btn btn-primary" onclick="applyAutoSchedule()">Save Schedule</button>
         </div>
       </div>
 
@@ -733,8 +734,9 @@ function generateSchedule(mode) {
 
 function applyAutoSchedule() {
   if (!state.autoResult) return;
-  if (!confirm('Apply this schedule to your manual builder? Your current schedule will be replaced.')) return;
+  if (!confirm('Save this schedule? Your current schedule will be replaced.')) return;
   state.schedule = JSON.parse(JSON.stringify(state.autoResult));
+  state.autoResult = null;
   saveState();
   showView('dashboard');
 }
