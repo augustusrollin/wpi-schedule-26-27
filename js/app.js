@@ -14,6 +14,10 @@ const DEFAULT_STATE = {
   autoResult: null,
   manualTerm: 'A',
   manualFilter: 'all',
+  catalogSemester: 'all',   // 'all' | 'fall' | 'spring'
+  catalogTerm: 'all',       // 'all' | 'A' | 'B' | 'C' | 'D'
+  catalogSubject: 'all',    // 'all' | 'CS' | 'DS' | 'EN' | 'INTL' | 'HU' | 'WPE'
+  catalogTime: 'all',       // 'all' | 'morning' | 'afternoon' | 'evening'
 };
 
 let state = loadState();
@@ -53,6 +57,7 @@ function renderActiveView() {
     case 'calendar':  renderCalendar();  break;
     case 'auto':      renderAuto();      break;
     case 'manual':    renderManual();    break;
+    case 'catalog':   renderCatalog();   break;
   }
 }
 
@@ -1083,6 +1088,167 @@ function openModal(courseId, term) {
 
 function closeModal() {
   document.getElementById('modal-overlay').classList.add('hidden');
+}
+
+// ============================================================
+// COURSE CATALOG
+// ============================================================
+function renderCatalog() {
+  const el = document.getElementById('view-catalog');
+
+  // Build flat list of all (course, term, section) entries
+  function getCatalogEntries() {
+    const entries = [];
+    for (const id of Object.keys(COURSES)) {
+      const c = COURSES[id];
+      if (c.isProject) continue; // skip IQP/MQP
+      for (const term of ['A','B','C','D']) {
+        if (!c.sections[term]) continue;
+        for (const sec of c.sections[term]) {
+          entries.push({ c, term, sec });
+        }
+      }
+    }
+    return entries;
+  }
+
+  // Apply filters
+  function applyFilters(entries) {
+    return entries.filter(({ c, term, sec }) => {
+      // Semester filter
+      if (state.catalogSemester === 'fall'   && !['A','B'].includes(term)) return false;
+      if (state.catalogSemester === 'spring' && !['C','D'].includes(term)) return false;
+      // Term filter (overrides semester when set)
+      if (state.catalogTerm !== 'all' && term !== state.catalogTerm) return false;
+      // Subject filter
+      if (state.catalogSubject !== 'all' && c.type !== state.catalogSubject) return false;
+      // Time filter
+      if (state.catalogTime !== 'all' && sec.start) {
+        const h = parseInt(sec.start.split(':')[0], 10);
+        if (state.catalogTime === 'morning'   && h >= 12) return false;
+        if (state.catalogTime === 'afternoon' && (h < 12 || h >= 17)) return false;
+        if (state.catalogTime === 'evening'   && h < 17) return false;
+      }
+      return true;
+    });
+  }
+
+  const allEntries = getCatalogEntries();
+  const filtered   = applyFilters(allEntries);
+
+  // Sort: by term A→D, then subject, then course code
+  filtered.sort((a, b) => {
+    const tOrd = ['A','B','C','D'];
+    if (a.term !== b.term) return tOrd.indexOf(a.term) - tOrd.indexOf(b.term);
+    if (a.c.type !== b.c.type) return a.c.type.localeCompare(b.c.type);
+    return a.c.code.localeCompare(b.c.code);
+  });
+
+  function fmtDays(days) {
+    if (!days || !days.length) return '—';
+    const map = { M:'Mon', T:'Tue', W:'Wed', R:'Thu', F:'Fri' };
+    return days.map(d => map[d] || d).join(' · ');
+  }
+
+  function catalogCard({ c, term, sec }) {
+    const ti   = TERM_INFO[term];
+    const meta = TYPE_META[c.type] || { color:'#888', text:'#fff' };
+    const displayName = sec.sectionName || c.name;
+    const timeStr = sec.start ? `${fmtTime(sec.start)}–${fmtTime(sec.end)}` : 'TBD';
+    const daysStr = fmtDays(sec.days);
+    const inSchedule = courseTermInSchedule(c.id, term);
+    const btnLabel = inSchedule ? 'Remove' : 'Add';
+    const btnCls   = inSchedule ? 'cat-btn-remove' : 'cat-btn-add';
+    const canAdd   = !inSchedule && TERM_AVAIL[term].includes(c.id);
+
+    return `
+      <div class="cat-card" onclick="openModal('${c.id}','${term}')">
+        <div class="cat-card-header">
+          <span class="cat-type-badge" style="background:${meta.color};color:${meta.text}">${c.type}</span>
+          <span class="cat-term-badge" style="background:${ti.color}">${term} Term</span>
+          <span class="cat-code">${c.code} · ${sec.section}</span>
+        </div>
+        <div class="cat-name">${displayName}</div>
+        <div class="cat-meta-row">
+          <span class="cat-meta-item">🕐 ${timeStr}</span>
+          <span class="cat-meta-item">📅 ${daysStr}</span>
+          ${sec.professor && sec.professor !== 'TBD' ? `<span class="cat-meta-item">👤 ${sec.professor}</span>` : ''}
+          ${sec.location ? `<span class="cat-meta-item">📍 ${sec.location}</span>` : ''}
+        </div>
+        <div class="cat-card-footer">
+          <span class="cat-enroll">${sec.enrolled ? `${sec.enrolled} enrolled` : ''}</span>
+          <button class="cat-btn ${btnCls}" onclick="event.stopPropagation();${canAdd||inSchedule?`toggleCourse('${c.id}','${term}');renderCatalog()`:''}">
+            ${canAdd || inSchedule ? btnLabel : 'N/A'}
+          </button>
+        </div>
+      </div>`;
+  }
+
+  // Filter button helper
+  function filterBtn(key, val, label, active) {
+    return `<button class="cat-filter-btn ${active?'active':''}"
+      onclick="state.catalogSemester='all';state.catalog${key.charAt(0).toUpperCase()+key.slice(1)}='${val}';saveState();renderCatalog()">${label}</button>`;
+  }
+
+  // Subject counts for filter bar
+  const subjectCounts = {};
+  for (const { c } of allEntries) subjectCounts[c.type] = (subjectCounts[c.type]||0) + 1;
+
+  const semesterBtns = [
+    filterBtn('semester','all',  'All Semesters',   state.catalogSemester==='all'),
+    filterBtn('semester','fall',  'Fall (A+B)',       state.catalogSemester==='fall'),
+    filterBtn('semester','spring','Spring (C+D)',     state.catalogSemester==='spring'),
+  ].join('');
+
+  const termBtns = ['all','A','B','C','D'].map(t =>
+    `<button class="cat-filter-btn ${state.catalogTerm===t?'active':''}"
+       onclick="state.catalogTerm='${t}';saveState();renderCatalog()">${t==='all'?'All Terms':t+' Term'}</button>`
+  ).join('');
+
+  const subjectBtns = ['all','CS','DS','EN','INTL','HU','WPE'].map(s =>
+    `<button class="cat-filter-btn ${state.catalogSubject===s?'active':''}"
+       onclick="state.catalogSubject='${s}';saveState();renderCatalog()">
+       ${s==='all'?'All Subjects':s}</button>`
+  ).join('');
+
+  const timeBtns = [
+    ['all','All Times'], ['morning','Morning (before 12)'], ['afternoon','Afternoon (12–5)'], ['evening','Evening (5+)']
+  ].map(([v,l]) =>
+    `<button class="cat-filter-btn ${state.catalogTime===v?'active':''}"
+       onclick="state.catalogTime='${v}';saveState();renderCatalog()">${l}</button>`
+  ).join('');
+
+  el.innerHTML = `
+    <div class="cat-wrap">
+      <div class="cat-header">
+        <h2 class="cat-title">Course Catalog</h2>
+        <span class="cat-count">${filtered.length} section${filtered.length!==1?'s':''} shown</span>
+      </div>
+
+      <div class="cat-filters">
+        <div class="cat-filter-group">
+          <div class="cat-filter-label">Semester</div>
+          <div class="cat-filter-row">${semesterBtns}</div>
+        </div>
+        <div class="cat-filter-group">
+          <div class="cat-filter-label">Term</div>
+          <div class="cat-filter-row">${termBtns}</div>
+        </div>
+        <div class="cat-filter-group">
+          <div class="cat-filter-label">Subject</div>
+          <div class="cat-filter-row">${subjectBtns}</div>
+        </div>
+        <div class="cat-filter-group">
+          <div class="cat-filter-label">Time of Day</div>
+          <div class="cat-filter-row">${timeBtns}</div>
+        </div>
+      </div>
+
+      <div class="cat-grid">
+        ${filtered.length ? filtered.map(catalogCard).join('') : '<div class="cat-empty">No sections match the selected filters.</div>'}
+      </div>
+    </div>
+  `;
 }
 
 // ============================================================

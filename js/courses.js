@@ -20,6 +20,7 @@ const TYPE_META = {
   DS:   { label:'Data Science',           color:'#27AE60', text:'#fff' },
   INTL: { label:'International Studies',  color:'#8E44AD', text:'#fff' },
   HU:   { label:'Humanities',             color:'#CA6F1E', text:'#fff' },
+  EN:   { label:'English',               color:'#6C3483', text:'#fff' },
   WPE:  { label:'Physical Education',     color:'#17A589', text:'#fff' },
   IQP:  { label:'IQP',                    color:'#B7950B', text:'#fff' },
   MQP:  { label:'MQP',                    color:'#922B21', text:'#fff' },
@@ -234,6 +235,19 @@ const COURSES = {
   },
 
   // ── DATA SCIENCE ──────────────────────────────────────────
+  DS1010: {
+    id:'DS1010', code:'DS 1010', type:'DS', credits:1,
+    name:'Data Science I: Introduction to Data Science',
+    description:'Cat. I, Units 1/3. Introduction to data science methods and applications. Covers data collection, cleaning, and visualization; exploratory data analysis; and introductory statistical modeling and machine learning. Students work with real datasets and develop computational skills for data-driven problem solving. Recommended background: MA 1021 or equivalent.',
+    prerequisites:[],
+    sections:{
+      A:[ { section:'A01', professor:'Daniel Treku',    days:['M','R'], start:'14:00', end:'15:50', location:'Salisbury Labs 402',       enrolled:'0/30', waitlist:'0/0' } ],
+      B:[ { section:'B01', professor:'Xiangnan Kong',   days:['M','R'], start:'12:00', end:'13:50', location:'Salisbury Labs 402',       enrolled:'0/30', waitlist:'0/0' } ],
+      C:[ { section:'C01', professor:'Torumoy Ghoshal', days:['M','R'], start:'14:00', end:'15:50', location:'Salisbury Labs 402',       enrolled:'0/30', waitlist:'0/0' } ],
+      D:[ { section:'D01', professor:'Torumoy Ghoshal', days:['M','R'], start:'14:00', end:'15:50', location:'Innovation Studio 205',   enrolled:'0/30', waitlist:'0/0' } ],
+    },
+  },
+
   DS2010: {
     id:'DS2010', code:'DS 2010', type:'DS', credits:1,
     name:'Data Science II: Statistical Modeling and Analysis',
@@ -352,6 +366,202 @@ const COURSES = {
       C:[
         { section:'C01', professor:'Peter Hansen', days:['T','F'], start:'10:00', end:'11:50', location:'Salisbury Labs 406', enrolled:'0/25', waitlist:'0/10' },
       ],
+    },
+  },
+
+  INTL2100: {
+    id:'INTL2100', code:'INTL 2100', type:'INTL', credits:1,
+    name:'Approaches to Global Studies',
+    description:'Cat. I. Introduces students to the interdisciplinary methods and frameworks used in international and global studies. Examines how scholars analyze global phenomena including migration, development, environment, culture, and governance. Appropriate for students planning to complete IQP at an international project center.',
+    prerequisites:[],
+    sections:{
+      B:[ { section:'B01', professor:'Alexander Herbert',  days:['M','R'], start:'08:00', end:'09:50', location:'Salisbury Labs 406', enrolled:'0/25', waitlist:'0/0' } ],
+      D:[ { section:'D01', professor:'John Galante',       days:['T','F'], start:'14:00', end:'15:50', location:'Salisbury Labs 407', enrolled:'0/25', waitlist:'0/0' } ],
+    },
+  },
+
+  INTL2420: {
+    id:'INTL2420', code:'INTL 2420', type:'INTL', credits:1,
+    name:'Middle East, North Africa and Mediterranean',
+    description:'Cat. II. Examines the history, politics, societies, and cultures of the Middle East, North Africa, and Mediterranean region. Explores themes including colonial legacies, nationalism, religion and state, gender and society, economic development, and contemporary conflicts. Case studies draw on countries relevant to WPI project center locations.',
+    prerequisites:[],
+    sections:{
+      D:[ { section:'D01', professor:'Mohammed El Hamzaoui', days:['M','R'], start:'12:00', end:'13:50', location:'Stratton Hall 301', enrolled:'0/25', waitlist:'0/0' } ],
+    },
+  },
+
+  INTL2910: {
+    id:'INTL2910', code:'INTL 2910', type:'INTL', credits:1,
+    name:'Topics in Global Studies',
+    description:'Cat. II. Special topics in international and global studies. Content varies by term and section. Each section addresses a distinct theme or region. Check the specific section for the topic offered.',
+    prerequisites:[],
+    sections:{
+      A:[ { section:'A01', sectionName:'Topics in Global Studies: Promises & Politics of Global Health',
+             professor:'Shana Lessing',  days:['T','F'], start:'14:00', end:'15:50', location:'Kaven Hall 115',      enrolled:'0/25', waitlist:'0/0' } ],
+      B:[ { section:'B01', sectionName:'Topics in Global Studies: Religion in Modern Japan',
+             professor:'Adrien Stoloff', days:['T','F'], start:'12:00', end:'13:50', location:'Salisbury Labs 011',  enrolled:'0/25', waitlist:'0/0' } ],
+      C:[
+        { section:'C01', sectionName:'Topics in Global Studies',
+          professor:'Peter Hansen',   days:['M','R'], start:'14:00', end:'15:50', location:'Washburn 323',           enrolled:'0/25', waitlist:'0/0' },
+        { section:'C02', sectionName:'Topics in Global Studies: East Asian Traditions and Modernity',
+          professor:'Adrien Stoloff', days:['T','F'], start:'10:00', end:'11:50', location:'Salisbury Labs 305',     enrolled:'0/25', waitlist:'0/0' },
+      ],
+    },
+  },
+
+  // ── ENGLISH ───────────────────────────────────────────────
+  EN1219: {
+    id:'EN1219', code:'EN 1219', type:'EN', credits:1,
+    name:'Introduction to Creative Writing',
+    description:'Cat. I. An introduction to the practice of creative writing across forms. Students read widely and write original work in poetry, fiction, and creative nonfiction. Emphasis on developing craft, voice, and revision skills through workshop-style critique and discussion.',
+    prerequisites:[],
+    sections:{
+      A:[ { section:'A01', professor:'Kate McIntyre',   days:['M','T','R','F'], start:'13:00', end:'13:50', location:'Fuller Labs 320',     enrolled:'0/20', waitlist:'0/0' } ],
+      C:[ { section:'C01', professor:'Joseph Aguilar',  days:['M','T','R','F'], start:'12:00', end:'12:50', location:'Higgins Labs 202',    enrolled:'0/20', waitlist:'0/0' } ],
+    },
+  },
+
+  EN1251: {
+    id:'EN1251', code:'EN 1251', type:'EN', credits:1,
+    name:'Introduction to Literature',
+    description:'Cat. I. An introduction to the close reading and analysis of literary texts, including fiction, poetry, and drama. Students develop skills in textual interpretation, argumentation, and academic writing through engagement with a diverse range of literary works.',
+    prerequisites:[],
+    sections:{
+      A:[ { section:'A01', professor:'Kristin Boudreau', days:['M','T','R','F'], start:'12:00', end:'12:50', location:'Stratton Hall 207',   enrolled:'0/20', waitlist:'0/0' } ],
+      B:[ { section:'B01', professor:'TBD',              days:['M','T','R','F'], start:'11:00', end:'11:50', location:'Fuller Labs 311',      enrolled:'0/20', waitlist:'0/0' } ],
+      D:[ { section:'D01', professor:'TBD',              days:['M','T','R','F'], start:'13:00', end:'13:50', location:'Salisbury Labs 407',   enrolled:'0/20', waitlist:'0/0' } ],
+    },
+  },
+
+  EN1259: {
+    id:'EN1259', code:'EN 1259', type:'EN', credits:1,
+    name:'Introduction to Contemporary Chicana/o Literature',
+    description:'Cat. I. Introduces students to the rich and diverse tradition of contemporary Chicana/o literature, including fiction, poetry, drama, and autobiography. Examines themes of identity, immigration, cultural memory, social justice, and the borderlands through texts by major Chicana/o writers.',
+    prerequisites:[],
+    sections:{
+      C:[ { section:'C01', professor:'Joseph Aguilar', days:['M','T','R','F'], start:'13:00', end:'13:50', location:'Salisbury Labs 407', enrolled:'0/20', waitlist:'0/0' } ],
+    },
+  },
+
+  EN1439: {
+    id:'EN1439', code:'EN 1439', type:'EN', credits:1,
+    name:'Introduction to Poetry',
+    description:'Cat. I. A close reading of poems representing a wide variety of periods, traditions, and forms. Students learn to analyze the elements of poetry including voice, meter, rhyme, imagery, and tone. Weekly writing exercises and discussions develop skills of close reading and literary interpretation.',
+    prerequisites:[],
+    sections:{
+      B:[ { section:'B01', professor:'Jim Cocola', days:['M','T','R','F'], start:'11:00', end:'11:50', location:'Stratton Hall 301', enrolled:'0/20', waitlist:'0/0' } ],
+    },
+  },
+
+  EN2219: {
+    id:'EN2219', code:'EN 2219', type:'EN', credits:1,
+    name:'Creative Writing Workshop',
+    description:'Cat. II. An intermediate creative writing workshop. Students produce and workshop original creative writing. The specific form — poetry, fiction, or creative nonfiction — varies by section. Check the section listing for this term\'s focus.',
+    prerequisites:[],
+    sections:{
+      A:[
+        { section:'A01', sectionName:'Creative Writing: Poetry',
+          professor:'Joseph Aguilar', days:['M','R'], start:'10:00', end:'11:50', location:'Kaven Hall 204',      enrolled:'0/15', waitlist:'0/0' },
+        { section:'A02', sectionName:'Creative Writing: Creative Nonfiction',
+          professor:'Kate McIntyre',  days:['M','R'], start:'14:00', end:'15:50', location:'Salisbury Labs 406', enrolled:'0/15', waitlist:'0/0' },
+      ],
+      B:[ { section:'B01', sectionName:'Creative Writing: Fiction',
+            professor:'Joseph Aguilar', days:['M','R'], start:'12:00', end:'13:50', location:'Stratton Hall 311', enrolled:'0/15', waitlist:'0/0' } ],
+      C:[ { section:'C01', sectionName:'Creative Writing: Fiction',
+            professor:'Kate McIntyre',  days:['M','R'], start:'14:00', end:'15:50', location:'Higgins Labs 202',  enrolled:'0/15', waitlist:'0/0' } ],
+      D:[ { section:'D01', sectionName:'Creative Writing: Poetry',
+            professor:'Jim Cocola',     days:['M','R'], start:'12:00', end:'13:50', location:'Higgins Labs 114',  enrolled:'0/15', waitlist:'0/0' } ],
+    },
+  },
+
+  EN2225: {
+    id:'EN2225', code:'EN 2225', type:'EN', credits:1,
+    name:'The Literature of Sin',
+    description:'Cat. II. Explores literary representations of sin, transgression, and moral failure across literary traditions. Examines how writers depict the allure and consequences of sinful behavior. Texts may include fiction, drama, and poetry from various periods and cultures.',
+    prerequisites:[],
+    sections:{
+      B:[ { section:'B01', professor:'Michelle Ephraim', days:['T','F'], start:'12:00', end:'13:50', location:'Stratton Hall 313', enrolled:'0/20', waitlist:'0/0' } ],
+    },
+  },
+
+  EN2251: {
+    id:'EN2251', code:'EN 2251', type:'EN', credits:1,
+    name:'Moral Issues in the Modern Novel',
+    description:'Cat. II. Examines the moral dimensions of modern novels. How do novelists engage with ethical questions of justice, responsibility, guilt, and compassion? Students read and discuss novels that put moral issues at the center of storytelling and analyze how literary form shapes moral reflection.',
+    prerequisites:[],
+    sections:{
+      B:[ { section:'B01', professor:'Svetlana Nikitina', days:['M','R'], start:'10:00', end:'11:50', location:'Unity Hall 520', enrolled:'0/20', waitlist:'0/0' } ],
+    },
+  },
+
+  EN2271: {
+    id:'EN2271', code:'EN 2271', type:'EN', credits:1,
+    name:'American Literary Histories: The Harlem Renaissance',
+    description:'Cat. II. A study of the Harlem Renaissance, the flourishing of Black intellectual and artistic life in 1920s New York. Examines poetry, fiction, essays, and visual arts of the period, exploring themes of racial identity, migration, modernity, and cultural pride. Authors may include Langston Hughes, Zora Neale Hurston, Claude McKay, and Nella Larsen.',
+    prerequisites:[],
+    sections:{
+      C:[ { section:'C01', professor:'Kristin Boudreau', days:['M','R'], start:'12:00', end:'13:50', location:'Kaven Hall 115', enrolled:'0/20', waitlist:'0/0' } ],
+    },
+  },
+
+  EN2281: {
+    id:'EN2281', code:'EN 2281', type:'EN', credits:1,
+    name:'World Literatures: African Fictions',
+    description:'Cat. II. Introduces students to major traditions of African fiction. Examines how African writers negotiate questions of colonialism, independence, identity, and modernity. Authors may include Chinua Achebe, Chimamanda Ngozi Adichie, Ngugi wa Thiong\'o, Buchi Emecheta, and others.',
+    prerequisites:[],
+    sections:{
+      B:[ { section:'B01', professor:'Kristin Boudreau', days:['M','R'], start:'10:00', end:'11:50', location:'Salisbury Labs 411', enrolled:'0/20', waitlist:'0/0' } ],
+    },
+  },
+
+  EN2410: {
+    id:'EN2410', code:'EN 2410', type:'EN', credits:1,
+    name:'Screenwriting',
+    description:'Cat. II. An introduction to the craft of writing for film and television. Students develop original screenplays and teleplays, learning the conventions of dramatic structure, scene construction, dialogue, and visual storytelling. Work is workshopped in a collaborative environment with feedback from peers and the instructor.',
+    prerequisites:[],
+    sections:{
+      D:[ { section:'D01', professor:'Kevin Lewis', days:['T','F'], start:'10:00', end:'11:50', location:'Higgins Labs 202', enrolled:'0/20', waitlist:'0/0' } ],
+    },
+  },
+
+  EN3219: {
+    id:'EN3219', code:'EN 3219', type:'EN', credits:1,
+    name:'Advanced Creative Writing: Fiction',
+    description:'Cat. III. An advanced workshop in fiction writing. Students produce substantial original fiction and engage deeply with workshop critique. Emphasis on structure, characterization, voice, and revision. Students are expected to have completed at least one prior creative writing course.',
+    prerequisites:[],
+    sections:{
+      C:[ { section:'C01', professor:'Kate McIntyre',   days:['M','R'], start:'12:00', end:'13:50', location:'Stratton Hall 313', enrolled:'0/15', waitlist:'0/0' } ],
+      D:[ { section:'D01', professor:'Joseph Aguilar',  days:['T','F'], start:'10:00', end:'11:50', location:'Stratton Hall 311', enrolled:'0/15', waitlist:'0/0' } ],
+    },
+  },
+
+  EN3226: {
+    id:'EN3226', code:'EN 3226', type:'EN', credits:1,
+    name:'Strange and Strangers',
+    description:'Cat. III. Examines literary and cultural representations of strangeness and the figure of the stranger. Topics may include the uncanny, the alien, the monstrous, and the outsider across genres and periods. Texts may include fiction, poetry, film, and theory.',
+    prerequisites:[],
+    sections:{
+      C:[ { section:'C01', professor:'Michelle Ephraim', days:['M','R'], start:'10:00', end:'11:50', location:'Fuller Labs 311', enrolled:'0/20', waitlist:'0/0' } ],
+    },
+  },
+
+  EN3231: {
+    id:'EN3231', code:'EN 3231', type:'EN', credits:1,
+    name:'Supernatural Literatures',
+    description:'Cat. III. Explores literary representations of the supernatural, from gothic horror to magical realism to contemporary speculative fiction. Examines how writers deploy supernatural elements to address questions of fear, desire, power, and the unknown. May include texts by Poe, Shelley, Lovecraft, Morrison, García Márquez, and others.',
+    prerequisites:[],
+    sections:{
+      A:[ { section:'A01', professor:'Joseph Aguilar', days:['M','R'], start:'08:00', end:'09:50', location:'Kaven Hall 204', enrolled:'0/20', waitlist:'0/0' } ],
+    },
+  },
+
+  EN3271: {
+    id:'EN3271', code:'EN 3271', type:'EN', credits:1,
+    name:'American Literary Topics: Toni Morrison',
+    description:'Cat. III. A focused study of the work of Toni Morrison, Nobel Prize-winning American novelist. Examines Morrison\'s major novels including Beloved, Song of Solomon, and The Bluest Eye, analyzing her themes of race, memory, community, and the African-American experience. Attention to Morrison\'s literary craft, her relationship to African-American literary tradition, and her cultural impact.',
+    prerequisites:[],
+    sections:{
+      D:[ { section:'D01', professor:'Kristin Boudreau', days:['M','R'], start:'12:00', end:'13:50', location:'Innovation Studio 203', enrolled:'0/20', waitlist:'0/0' } ],
     },
   },
 
@@ -525,23 +735,28 @@ const COURSES = {
 // ── TERM AVAILABILITY ─────────────────────────────────────────
 // Based on PDF "class list 26-27" — authoritative course list per term
 const TERM_AVAIL = {
-  A:['INTL2310','INTL2410',
+  A:['INTL2310','INTL2410','INTL2910',
+     'EN1219','EN1251','EN2219','EN3231',
+     'DS1010',
      'WPE1009','WPE1011','WPE1012','WPE1018','WPE1019',
      'CS3043','CS4341','CS4342','CS4343','CS4432','CS4445',
      'IQP','MQP'],
-  B:['INTL2210','INTL2320',
+  B:['INTL2100','INTL2210','INTL2320','INTL2910',
+     'EN1251','EN1439','EN2219','EN2225','EN2251','EN2281',
+     'DS1010','DS2010','DS3010',
      'WPE1009','WPE1012','WPE1018','WPE1019',
-     'DS2010','DS3010',
      'CS3043','CS3733','CS4341','CS4342','CS4343','CS4344','CS4432','CS4804',
      'IQP','MQP'],
-  C:['INTL1100','INTL2510','HU3900',
+  C:['INTL1100','INTL2510','INTL2910','HU3900',
+     'EN1219','EN1259','EN2219','EN2271','EN3219','EN3226',
+     'DS1010','DS2010','DS3010',
      'WPE1003','WPE1009','WPE1012','WPE1018','WPE1019',
-     'DS2010','DS3010',
      'CS3043','CS3733','CS4341','CS4342','CS4433',
      'IQP','MQP'],
-  D:['INTL2110','HU3900',
+  D:['INTL2100','INTL2110','INTL2420','HU3900',
+     'EN1251','EN2219','EN2410','EN3219','EN3271',
+     'DS1010','DS2010','DS3010',
      'WPE1009','WPE1011','WPE1012','WPE1018','WPE1019',
-     'DS2010','DS3010',
      'CS3043','CS3733','CS4341','CS4342','CS4345','CS4432','CS4445',
      'IQP','MQP'],
 };
