@@ -20,6 +20,7 @@ const DEFAULT_STATE = {
   catalogSubject: 'all',    // 'all' | 'CS' | 'DS' | 'EN' | 'INTL' | 'HU' | 'WPE'
   catalogTime: 'all',       // 'all' | 'morning' | 'afternoon' | 'evening'
   hiddenTypes: [],           // types hidden from calendar/manual views
+  dismissedCourses: [],      // courses marked "not interested"
 };
 
 let state = loadState();
@@ -102,6 +103,16 @@ function toggleHiddenType(type) {
   if (idx >= 0) state.hiddenTypes.splice(idx, 1);
   else state.hiddenTypes.push(type);
   saveState();
+  renderCalendar();
+}
+
+function toggleDismiss(courseId) {
+  if (!state.dismissedCourses) state.dismissedCourses = [];
+  const idx = state.dismissedCourses.indexOf(courseId);
+  if (idx >= 0) state.dismissedCourses.splice(idx, 1);
+  else state.dismissedCourses.push(courseId);
+  saveState();
+  closeModal();
   renderCalendar();
 }
 
@@ -722,21 +733,24 @@ function buildCalendarGrid(courseIds, term) {
   }
 
   // Course blocks
+  const dismissed = state.dismissedCourses || [];
   const courseBlocks = blocks.map(b => {
     const meta    = TYPE_META[b.c.type];
     const sec     = b.sec;
     const rowSpan = b.endRow - b.startRow;
+    const isDismissed = !b.isMine && dismissed.includes(b.id);
 
     // Side-by-side layout for overlapping blocks
     const w = b.totalSubCols > 1
       ? `width:calc(${100/b.totalSubCols}% - 2px);left:calc(${b.subCol * 100/b.totalSubCols}%);`
       : '';
 
-    // "Mine" blocks: bright, solid; "available" blocks: slightly transparent
-    const opacity = b.isMine ? '1' : '0.72';
+    // "Mine" blocks: bright, solid; dismissed: heavily muted; others: slightly transparent
+    const opacity = b.isMine ? '1' : isDismissed ? '0.25' : '0.72';
     const shadow  = b.isMine
       ? `box-shadow:inset 0 0 0 2px rgba(255,255,255,.5), 0 2px 6px rgba(0,0,0,.2);`
       : '';
+    const dismissedStyle = isDismissed ? 'filter:grayscale(1);' : '';
 
     // Lab blocks use a darker tint
     const bgColor = b.isLab
@@ -762,13 +776,13 @@ function buildCalendarGrid(courseIds, term) {
     };
 
     return `
-      <div class="cal-block${b.isLab?' cal-block-lab':''}"
+      <div class="cal-block${b.isLab?' cal-block-lab':''}${isDismissed?' cal-block-dismissed':''}"
         style="grid-row:${b.startRow}/${b.endRow};grid-column:${b.colIdx};
-               background:${bgColor};opacity:${opacity};${w}${shadow}"
+               background:${bgColor};opacity:${opacity};${w}${shadow}${dismissedStyle}"
         onclick="openModal('${b.id}','${term}',${b.secIdx ?? -1})"
-        title="${b.c.code}${secLabel}${labTag} · ${b.c.name}&#10;${fmtTime(sec.start)}–${fmtTime(sec.end)}&#10;${sec.professor||''}${sec.location?' · '+sec.location:''}">
+        title="${isDismissed?'[Not Interested] ':''}${b.c.code}${secLabel}${labTag} · ${b.c.name}&#10;${fmtTime(sec.start)}–${fmtTime(sec.end)}&#10;${sec.professor||''}${sec.location?' · '+sec.location:''}">
         <div class="cal-block-inner">
-          <div class="cal-block-code">${b.c.code}${b.isLab ? ' Lab' : ''}${b.isMine ? ' ★' : ''}</div>
+          <div class="cal-block-code" style="${isDismissed?'text-decoration:line-through':''}">${b.c.code}${b.isLab ? ' Lab' : ''}${b.isMine ? ' ★' : ''}${isDismissed?' ✕':''}</div>
           <div class="cal-block-time">${fmtTime(sec.start)}–${fmtTime(sec.end)}</div>
           ${profLine}
           ${roomLine}
@@ -1146,12 +1160,13 @@ function renderManual() {
                     }).join('')}
                   </select>` : '';
 
+                const isDismissed = !isIn && (state.dismissedCourses||[]).includes(c.id);
                 return `
-                  <div class="course-item ${isIn?'in-schedule':''} ${isElim&&!isIn?'eliminated':''}"
+                  <div class="course-item ${isIn?'in-schedule':''} ${isElim&&!isIn?'eliminated':''} ${isDismissed?'dismissed-item':''}"
                     onclick="${isElim&&!isIn ? `showEliminatedReason('${c.id}','${term}')` : `toggleCourse('${c.id}','${term}')`}"
                     title="${c.name}">
                     <div class="ci-left">
-                      <div class="ci-code" style="color:${TYPE_META[c.type].color}">${c.code}</div>
+                      <div class="ci-code" style="color:${TYPE_META[c.type].color};${isDismissed?'text-decoration:line-through':''}">${c.code}</div>
                       <div class="ci-name">${c.name}</div>
                       <div class="ci-meta">${timeStr}${profStr?' · '+profStr:''}${enrollStr}${sections.length>1?` <em>(${sections.length} sections)</em>`:''}</div>
                       ${sectionSelector}
@@ -1159,6 +1174,7 @@ function renderManual() {
                     <div class="ci-right">
                       ${isIn ? '<span class="ci-badge in">Added ✓</span>' :
                         isElim ? '<span class="ci-badge elim">Unavailable</span>' :
+                        isDismissed ? '<span class="ci-badge dismissed">✕ Not Interested</span>' :
                         '<span class="ci-badge add">+ Add</span>'}
                     </div>
                   </div>`;
@@ -1393,6 +1409,11 @@ function openModal(courseId, term, clickedSecIdx) {
             onclick="toggleCourse('${courseId}','${term}');closeModal()">
             ${isInSchedule ? 'Remove from Schedule' : 'Add to Schedule'}
           </button>
+          ${!isInSchedule ? `
+          <button class="btn btn-dismiss ${(state.dismissedCourses||[]).includes(courseId) ? 'dismissed' : ''}"
+            onclick="toggleDismiss('${courseId}')">
+            ${(state.dismissedCourses||[]).includes(courseId) ? '↩ Undo Not Interested' : '✕ Not Interested'}
+          </button>` : ''}
           <button class="btn btn-outline" onclick="closeModal()">Close</button>
         </div>` : ''}
     </div>
