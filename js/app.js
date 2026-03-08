@@ -19,6 +19,7 @@ const DEFAULT_STATE = {
   catalogTerm: 'all',       // 'all' | 'A' | 'B' | 'C' | 'D'
   catalogSubject: 'all',    // 'all' | 'CS' | 'DS' | 'EN' | 'INTL' | 'HU' | 'WPE'
   catalogTime: 'all',       // 'all' | 'morning' | 'afternoon' | 'evening'
+  hiddenTypes: [],           // types hidden from calendar/manual views
 };
 
 let state = loadState();
@@ -71,8 +72,8 @@ function regCount(term) {
 }
 function effectiveRegCount(term) {
   const reg = regCount(term);
-  const tags = state.termTags?.[term] || { iqp: false, hu39xx: false };
-  return reg + (tags.iqp ? 1 : 0) + (tags.hu39xx ? 1 : 0);
+  const tags = state.termTags?.[term] || {};
+  return reg + (tags.iqp ? 1 : 0);
 }
 function allCourses() {
   return ['A','B','C','D'].flatMap(t => state.schedule[t]);
@@ -93,6 +94,15 @@ function setSelectedSection(courseId, term, idx) {
   if (!state.selectedSections[term]) state.selectedSections[term] = {};
   state.selectedSections[term][courseId] = idx;
   saveState();
+}
+
+function toggleHiddenType(type) {
+  if (!state.hiddenTypes) state.hiddenTypes = [];
+  const idx = state.hiddenTypes.indexOf(type);
+  if (idx >= 0) state.hiddenTypes.splice(idx, 1);
+  else state.hiddenTypes.push(type);
+  saveState();
+  renderCalendar();
 }
 
 function toggleTermTag(term, tag) {
@@ -210,12 +220,11 @@ function renderGradRequirements() {
     })].join('');
 
   // INTL courses in this year's plan (excluding the prior INTL 2100)
-  const hasHU39xx = ['A','B','C','D'].some(t => state.termTags?.[t]?.hu39xx);
   const intlInPlan = all.filter(id => { const c=getCourse(id); return c&&c.type==='INTL'&&id!=='INTL2100'; });
   const hua2id = intlInPlan[0] || null;
   const hua3id = intlInPlan[1] || null;
   const huaLabel = id => { const c=getCourse(id); return c ? `${c.code} — ${c.name}` : id; };
-  const hu3900Label = () => { const c=getCourse('HU3900'); return c ? `${c.code} — ${c.name}` : 'HU 3900/3910 — Inquiry Seminar'; };
+  const hu39id = all.find(id => { const c=getCourse(id); return c && c.type==='HU39'; }) || null;
 
   // Category definitions
   const categories = [
@@ -223,13 +232,13 @@ function renderGradRequirements() {
       mkRow('INTL2100','INTL 2100 — Approaches to Global Studies','prior'),
       hua2id ? mkRow(hua2id, huaLabel(hua2id), 'needed') : mkRow('__hua2','HUA Depth 2 (INTL / HI / HU)','manual'),
       hua3id ? mkRow(hua3id, huaLabel(hua3id), 'needed') : mkRow('__hua3','HUA Depth 3 (INTL / HI / HU)','manual'),
-      hasHU39xx ? `<div class="req-item done"><span class="req-check">✓</span><span class="req-label">${hu3900Label()}</span></div>`
-                : mkRow('HU3900', hu3900Label(), 'needed'),
+      hu39id ? mkRow(hu39id, `${getCourse(hu39id).code} — ${getCourse(hu39id).name}`, 'needed')
+             : mkRow('__hu39', 'HU 3900/3910 — Inquiry Seminar', 'needed'),
       mkRow('EN1222','EN 1222 — Shakespeare','prior'),
       mkRow('HI1330','HI 1330 — Science and Technology','prior'),
     ], priorCount:3, manualCount: (hua2id?0:1)+(hua3id?0:1),
-       neededIds:[...(all.includes('HU3900')?['HU3900']:[]), ...(hua2id?[hua2id]:[]), ...(hua3id?[hua3id]:[])],
-       extraPlanCount: hasHU39xx && !all.includes('HU3900') ? 1 : 0 },
+       neededIds:[...(hu39id?[hu39id]:[]), ...(hua2id?[hua2id]:[]), ...(hua3id?[hua3id]:[])],
+       extraPlanCount: 0 },
 
     { title:'Wellness & PE', note:'1 credit required (4 × 0.25)', rawRows: wpeRows,
       doneCount: (1 + Math.min(wpeInPlan.length, 3)) * 0.25, totalCount: 1,
@@ -460,8 +469,8 @@ function renderTermCard(term) {
   const courses = state.schedule[term].map(id => getCourse(id)).filter(Boolean);
   const regular = courses.filter(c => c.type !== 'WPE');
   const pe = courses.filter(c => c.type === 'WPE');
-  const tags = state.termTags?.[term] || { iqp: false, hu39xx: false };
-  const tagCount = (tags.iqp ? 1 : 0) + (tags.hu39xx ? 1 : 0);
+  const tags = state.termTags?.[term] || {};
+  const tagCount = tags.iqp ? 1 : 0;
   const count = regular.length + tagCount;
   const status = count === 0 ? '' : count < 3 ? 'under' : count > 4 ? 'over' : 'ok';
 
@@ -482,8 +491,7 @@ function renderTermCard(term) {
             <div class="term-course-chip" style="background:${TYPE_META[c.type].color}" onclick="openModal('${c.id}','${term}')">
               ${c.code}
             </div>`),
-          tags.iqp ? `<div class="term-course-chip" style="background:${TYPE_META.IQP.color}">IQP</div>` : '',
-          tags.hu39xx ? `<div class="term-course-chip" style="background:${TYPE_META.HU.color}">HU 39XX</div>` : ''].filter(Boolean).join('')}
+          tags.iqp ? `<div class="term-course-chip" style="background:${TYPE_META.IQP.color}">IQP</div>` : ''].filter(Boolean).join('')}
       </div>
       <button class="btn-term-edit" onclick="state.manualTerm='${term}';showView('manual')">
         Edit ${term} term
@@ -524,12 +532,15 @@ function renderCalendar() {
   const mode = state.calendarMode;
   const info = TERM_INFO[term];
 
+  const hidden = state.hiddenTypes || [];
   const courseIds = mode === 'mine'
-    ? state.schedule[term]
+    ? state.schedule[term].filter(id => { const c = getCourse(id); return c && !hidden.includes(c.type); })
     : TERM_AVAIL[term].filter(id => {
-        if (courseTermInSchedule(id, term)) return true; // in this term — show as "mine"
         const c = getCourse(id);
-        if (c && c.isProject) return true;               // IQP/MQP can span terms
+        if (!c) return false;
+        if (hidden.includes(c.type)) return false;       // type filtered out
+        if (courseTermInSchedule(id, term)) return true; // in this term — show as "mine"
+        if (c.isProject) return true;                    // IQP/MQP can span terms
         return !courseInSchedule(id);                    // hide if scheduled elsewhere
       });
 
@@ -564,13 +575,17 @@ function renderCalendar() {
     <div class="term-tags-bar">
       <span class="term-tags-label">${term} Term tags (count as 1 class each):</span>
       <label class="term-tag-check"><input type="checkbox" ${(state.termTags?.[term]?.iqp)?'checked':''} onchange="toggleTermTag('${term}','iqp')"> IQP this term</label>
-      <label class="term-tag-check"><input type="checkbox" ${(state.termTags?.[term]?.hu39xx)?'checked':''} onchange="toggleTermTag('${term}','hu39xx')"> HU 39XX this term</label>
     </div>
 
     <div class="calendar-legend">
-      ${Object.entries(TYPE_META).map(([type,meta])=>`
-        <span class="legend-chip" style="background:${meta.color}">${meta.label}</span>
-      `).join('')}
+      <span class="legend-hint">Click to hide/show:</span>
+      ${Object.entries(TYPE_META).map(([type,meta])=>{
+        const isHidden = (state.hiddenTypes||[]).includes(type);
+        return `<span class="legend-chip ${isHidden?'legend-chip-hidden':''}"
+          style="background:${meta.color};opacity:${isHidden?0.35:1};cursor:pointer"
+          title="${isHidden?'Show':'Hide'} ${meta.label}"
+          onclick="toggleHiddenType('${type}')">${meta.label}</span>`;
+      }).join('')}
     </div>
 
     <div class="calendar-wrap">
@@ -1003,11 +1018,24 @@ function renderManual() {
   const available = TERM_AVAIL[term];
   const eliminated = getEliminatedInTerm(term);
 
+  // Conflict filter: hide courses whose times clash with already-scheduled courses
+  const conflicted = new Set();
+  for (const id of available) {
+    if (courseTermInSchedule(id, term)) continue; // already in — never hide
+    const c = getCourse(id);
+    if (!c || !c.sections[term]) continue;
+    for (const schedId of state.schedule[term]) {
+      const schedC = getCourse(schedId);
+      if (schedC && doCourseTimesConflict(c, schedC, term)) { conflicted.add(id); break; }
+    }
+  }
+
   const typeGroups = {};
   for (const id of available) {
     const c = getCourse(id);
     if (!c) continue;
     if (filter !== 'all' && c.type !== filter) continue;
+    if (!courseTermInSchedule(id, term) && conflicted.has(id)) continue; // hide conflicts
     if (!typeGroups[c.type]) typeGroups[c.type] = [];
     typeGroups[c.type].push(c);
   }
@@ -1044,7 +1072,7 @@ function renderManual() {
         </div>
 
         <div class="type-filter">
-          ${['all','CS','DS','INTL','HU','WPE','IQP','MQP'].map(f=>`
+          ${['all','CS','DS','INTL','HU','HU39','WPE','IQP','MQP'].map(f=>`
             <button class="filter-chip ${f===filter?'active':''}"
               ${TYPE_META[f] ? `style="${f===filter?`background:${TYPE_META[f].color};color:#fff`:''}"`:''}
               onclick="state.manualFilter='${f}';renderManual()">${f==='all'?'All':TYPE_META[f]?TYPE_META[f].label:f}</button>
@@ -1297,9 +1325,7 @@ function openModal(courseId, term, clickedSecIdx) {
     </div>` : '';
 
   const prereqNote = c.prereqNote ? `<div class="modal-prereq-note">⚠ ${c.prereqNote}</div>` : '';
-  const placeholderNote = c.hu3900placeholder
-    ? `<div class="modal-prereq-note">📌 HU 3900 sections have not yet been posted for Spring 2027. Check courselistings.wpi.edu. Must complete 2 INTL courses first.</div>`
-    : '';
+  const placeholderNote = '';
 
   document.getElementById('modal-content').innerHTML = `
     <div class="modal-course-header" style="background:${meta.color}">
@@ -1398,9 +1424,7 @@ function downloadSchedulePDF() {
 
     const tagRows = [];
     const iqpMeta = TYPE_META.IQP || { color:'#B7950B' };
-    const huMeta = TYPE_META.HU || { color:'#CA6F1E' };
     if (tags.iqp) tagRows.push(`<tr><td style="padding:4px 6px;border-bottom:1px solid #eee"><span style="background:${iqpMeta.color};color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px">IQP</span></td><td style="padding:4px 6px;border-bottom:1px solid #eee;font-weight:600;font-size:11px">IQP</td><td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:11px">Interactive Qualifying Project (1 cr)</td><td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;color:#444">No fixed time</td><td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;color:#444">—</td><td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;color:#444">—</td></tr>`);
-    if (tags.hu39xx) tagRows.push(`<tr><td style="padding:4px 6px;border-bottom:1px solid #eee"><span style="background:${huMeta.color};color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px">HU</span></td><td style="padding:4px 6px;border-bottom:1px solid #eee;font-weight:600;font-size:11px">HU 39XX</td><td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:11px">Upper-level Humanities (1 cr, not yet posted)</td><td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;color:#444">No fixed time</td><td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;color:#444">—</td><td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;color:#444">—</td></tr>`);
     const allTableRows = rows + tagRows.join('');
 
     return `<div style="border:1px solid #ddd;border-radius:6px;overflow:hidden">

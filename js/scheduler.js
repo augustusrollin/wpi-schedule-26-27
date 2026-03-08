@@ -35,8 +35,8 @@ class ScheduleValidator {
       const c = getCourse(id);
       return c && c.type !== 'WPE';
     }).length;
-    const tags = this.termTags[term] || { iqp: false, hu39xx: false };
-    const tagCount = (tags.iqp ? 1 : 0) + (tags.hu39xx ? 1 : 0);
+    const tags = this.termTags[term] || {};
+    const tagCount = tags.iqp ? 1 : 0;
     return courseCount + tagCount;
   }
 
@@ -51,8 +51,8 @@ class ScheduleValidator {
   _semesterTotals(errors, warnings) {
     const regWithTags = (term) => {
       const n = this.sch[term].filter(id => { const c=getCourse(id); return c && c.type!=='WPE'; }).length;
-      const tags = this.termTags[term] || { iqp: false, hu39xx: false };
-      return n + (tags.iqp ? 1 : 0) + (tags.hu39xx ? 1 : 0);
+      const tags = this.termTags[term] || {};
+      return n + (tags.iqp ? 1 : 0);
     };
     const fall   = regWithTags('A') + regWithTags('B');
     const spring = regWithTags('C') + regWithTags('D');

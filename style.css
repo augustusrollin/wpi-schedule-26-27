@@ -291,11 +291,16 @@ ul { list-style: none; }
 .term-tag-check input { accent-color: var(--wpi-red); }
 
 /* ── CALENDAR LEGEND ───────────────────────────────────────── */
-.calendar-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.calendar-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; align-items: center; }
+.legend-hint { font-size: .72rem; color: #888; font-style: italic; margin-right: 2px; }
 .legend-chip {
   padding: 3px 12px; border-radius: 999px;
   font-size: .75rem; font-weight: 600; color: #fff;
+  transition: opacity .15s, transform .1s;
+  user-select: none;
 }
+.legend-chip:hover { transform: scale(1.07); }
+.legend-chip-hidden { text-decoration: line-through; }
 
 /* ── CALENDAR GRID ─────────────────────────────────────────── */
 .calendar-wrap {
