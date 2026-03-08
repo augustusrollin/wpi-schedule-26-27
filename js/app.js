@@ -539,9 +539,15 @@ function renderCalendar() {
         const c = getCourse(id);
         if (!c) return false;
         if (hidden.includes(c.type)) return false;       // type filtered out
-        if (courseTermInSchedule(id, term)) return true; // in this term — show as "mine"
+        if (courseTermInSchedule(id, term)) return true; // in this term — always show
         if (c.isProject) return true;                    // IQP/MQP can span terms
-        return !courseInSchedule(id);                    // hide if scheduled elsewhere
+        if (courseInSchedule(id)) return false;          // scheduled another term
+        // hide if time conflicts with any already-scheduled course this term
+        for (const schedId of state.schedule[term]) {
+          const schedC = getCourse(schedId);
+          if (schedC && doCourseTimesConflict(c, schedC, term)) return false;
+        }
+        return true;
       });
 
   el.innerHTML = `
