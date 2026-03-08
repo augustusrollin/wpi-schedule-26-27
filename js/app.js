@@ -541,13 +541,7 @@ function renderCalendar() {
         if (hidden.includes(c.type)) return false;       // type filtered out
         if (courseTermInSchedule(id, term)) return true; // in this term — always show
         if (c.isProject) return true;                    // IQP/MQP can span terms
-        if (courseInSchedule(id)) return false;          // scheduled another term
-        // hide if time conflicts with any already-scheduled course this term
-        for (const schedId of state.schedule[term]) {
-          const schedC = getCourse(schedId);
-          if (schedC && doCourseTimesConflict(c, schedC, term)) return false;
-        }
-        return true;
+        return !courseInSchedule(id);                    // hide if scheduled another term
       });
 
   el.innerHTML = `
@@ -619,6 +613,31 @@ function buildCalendarGrid(courseIds, term) {
     }
   }
 
+  // Build per-day blocked intervals from scheduled courses
+  const blockedByDay = {}; // day → [{startRow, endRow}]
+  for (const id of courseIds) {
+    if (!courseTermInSchedule(id, term)) continue;
+    const sec = getSelectedSection(id, term);
+    if (!sec || !sec.start) continue;
+    for (const bsec of [sec, sec.lab].filter(Boolean)) {
+      if (!bsec.start || !bsec.days) continue;
+      const sr = timeToRow(bsec.start, false);
+      const er = timeToRow(bsec.end, true);
+      for (const day of bsec.days) {
+        if (!blockedByDay[day]) blockedByDay[day] = [];
+        blockedByDay[day].push({ startRow: sr, endRow: er });
+      }
+    }
+  }
+
+  function isBlocked(sec, day) {
+    const intervals = blockedByDay[day];
+    if (!intervals || !sec.start) return false;
+    const sr = timeToRow(sec.start, false);
+    const er = timeToRow(sec.end, true);
+    return intervals.some(iv => sr < iv.endRow && er > iv.startRow);
+  }
+
   for (const id of courseIds) {
     const c = getCourse(id);
     if (!c || !c.sections[term]) continue;
@@ -631,10 +650,14 @@ function buildCalendarGrid(courseIds, term) {
       addBlocks(id, c, sec, true, false, selIdx);
       if (sec.lab) addBlocks(id, c, sec.lab, true, true, selIdx);
     } else {
-      // Not scheduled: show ALL sections so every time option is visible
+      // Not scheduled: show sections that don't conflict with scheduled courses
       for (let si = 0; si < c.sections[term].length; si++) {
         const sec = c.sections[term][si];
         if (!sec) continue;
+        // Skip this section's blocks if any of its days conflict
+        const blocked = sec.days?.some(d => isBlocked(sec, d)) ||
+                        (sec.lab?.days?.some(d => isBlocked(sec.lab, d)));
+        if (blocked) continue;
         addBlocks(id, c, sec, false, false, si);
         if (sec.lab) addBlocks(id, c, sec.lab, false, true, si);
       }
