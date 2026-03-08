@@ -442,7 +442,6 @@ function renderDashboard() {
 
     <div class="info-banner">
       Course data from <strong>courselistings.wpi.edu</strong> (fetched Feb 2026).
-      Note: <strong>HU 3900 sections not yet posted</strong> — a slot is reserved in your schedule.
       Verify enrollment before registering.
     </div>
 
